@@ -92,13 +92,19 @@ def _get_centroid(points: List[Person]) -> Dict[str, float]:
     return {"lat": lat, "lng": lng}
 
 
-def _place_search_around(center: Dict[str, float], query: str, radius: int, page_size: int) -> List[Dict[str, Any]]:
+def _place_search_around(
+    center: Dict[str, float],
+    query: str,
+    radius: int,
+    page_size: int,
+    page_num: int = 0,
+) -> List[Dict[str, Any]]:
     params = {
         "query": query,
         "location": f"{center['lat']},{center['lng']}",
         "radius": radius,
         "page_size": page_size,
-        "page_num": 0,
+        "page_num": page_num,
     }
     data = _call_baidu(PLACE_AROUND_URL, params)
     if data.get("status") != 0:
@@ -243,19 +249,36 @@ def meeting_points():
     page_size = int(payload.get("page_size") or 20)
 
     center = _get_centroid(persons)
-    candidates = _place_search_around(center, query, radius, page_size)
+
+    # 半径大时提高候选数量，减少“全被过滤”的概率
+    if radius >= 10000:
+        page_size = max(page_size, 40)
+    page_size = min(page_size, 50)
+
+    # 多页拉取候选点（最多3页）
+    candidates: List[Dict[str, Any]] = []
+    for page_num in range(3):
+        candidates.extend(_place_search_around(center, query, radius, page_size, page_num))
+        if len(candidates) >= page_size * 2:
+            break
 
     # 策略1：如果第一轮没找到候选点，尝试扩大半径再次搜索
     if not candidates:
         new_radius = radius * 2
         print(f"[INFO] 初始半径 {radius}m 未找到结果，尝试扩大至 {new_radius}m")
-        candidates = _place_search_around(center, query, new_radius, page_size)
+        for page_num in range(3):
+            candidates.extend(_place_search_around(center, query, new_radius, page_size, page_num))
+            if len(candidates) >= page_size * 2:
+                break
     
     # 策略2：如果还是没找到，尝试仅搜索第一个关键词
     if not candidates and "$" in query:
         first_query = query.split("$")[0]
         print(f"[INFO] 仍未找到结果，尝试简化关键词为: {first_query}")
-        candidates = _place_search_around(center, first_query, radius * 2, page_size)
+        for page_num in range(3):
+            candidates.extend(_place_search_around(center, first_query, radius * 2, page_size, page_num))
+            if len(candidates) >= page_size * 2:
+                break
 
     results: List[Dict[str, Any]] = []
     for c in candidates:

@@ -6,11 +6,11 @@
     <title>多人会面点计算 - 百度地图</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; background-color: #f5f5f7; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; background-color: #000; color: #fff; }
         
-        .header { background: #fff; color: #333; padding: 15px 25px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); z-index: 10; display: flex; align-items: center; justify-content: space-between; }
-        .header-left h1 { font-size: 20px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px; }
-        .header-left p { font-size: 13px; color: #86868b; }
+        .header { background: #000; color: #fff; padding: 15px 25px; box-shadow: 0 1px 4px rgba(0,0,0,0.35); z-index: 10; display: flex; align-items: center; justify-content: space-between; }
+        .header-left h1 { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+        .header-left p { font-size: 13px; color: #cfcfcf; }
         
         .main-container { display: flex; flex: 1; overflow: hidden; }
         
@@ -24,77 +24,77 @@
         .map-tip { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 999; backdrop-filter: blur(4px); }
         .map-tip.show { opacity: 1; }
         
-        .control-panel { width: 420px; background: white; padding: 0; overflow-y: auto; box-shadow: -1px 0 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; border-left: 1px solid #e5e5e5; }
+        .control-panel { width: 420px; background: #000; padding: 0; overflow-y: auto; box-shadow: -1px 0 10px rgba(0,0,0,0.35); display: flex; flex-direction: column; border-left: 1px solid #222; }
         
         .panel-content { padding: 24px; flex: 1; }
         
-        .section { margin-bottom: 24px; background: #fff; border-radius: 12px; }
+        .section { margin-bottom: 24px; background: #111; border-radius: 12px; }
         
-        .section-title { font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .section-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
         .section-title::before { content: ''; width: 4px; height: 16px; background: #007aff; border-radius: 2px; }
         
         .input-group { margin-bottom: 16px; }
-        .input-group label { display: block; font-size: 12px; color: #86868b; margin-bottom: 6px; font-weight: 500; }
-        .input-group input, .input-group select { width: 100%; padding: 10px 12px; border: 1px solid #d2d2d7; border-radius: 8px; font-size: 14px; transition: all 0.2s; background: #fbfbfd; color: #1d1d1f; }
-        .input-group input:focus, .input-group select:focus { outline: none; border-color: #007aff; background: #fff; box-shadow: 0 0 0 4px rgba(0,122,255,0.1); }
+        .input-group label { display: block; font-size: 12px; color: #cfcfcf; margin-bottom: 6px; font-weight: 500; }
+        .input-group input, .input-group select { width: 100%; padding: 10px 12px; border: 1px solid #333; border-radius: 8px; font-size: 14px; transition: all 0.2s; background: #111; color: #fff; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: #007aff; background: #111; box-shadow: 0 0 0 4px rgba(0,122,255,0.1); }
         
         .input-row { display: flex; gap: 12px; }
         .input-row .input-group { flex: 1; }
         
         .button-group { display: flex; gap: 12px; margin-top: 20px; }
         
-        .btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; background: #007aff; color: #fff; }
         
-        .btn-primary { background: #007aff; color: white; }
+        .btn-primary { background: #007aff; color: #fff; }
         .btn-primary:hover { background: #0062cc; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,122,255,0.25); }
         .btn-primary:active { transform: translateY(0); }
         
-        .btn-secondary { background: #f2f2f7; color: #1d1d1f; }
-        .btn-secondary:hover { background: #e5e5ea; }
+        .btn-secondary { background: #007aff; color: #fff; }
+        .btn-secondary:hover { background: #0062cc; }
         
-        .btn-danger { background: #fff0f0; color: #ff3b30; }
-        .btn-danger:hover { background: #ffdede; }
+        .btn-danger { background: #007aff; color: #fff; }
+        .btn-danger:hover { background: #0062cc; }
         
         .btn-icon-only { padding: 6px; width: 28px; height: 28px; border-radius: 6px; flex: none; }
         
         .people-list { display: flex; flex-direction: column; gap: 12px; }
         
-        .person-item { background: #fbfbfd; border: 1px solid #e5e5e5; border-radius: 10px; padding: 12px; position: relative; transition: all 0.2s; }
-        .person-item:hover { border-color: #d2d2d7; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
-        .person-item.active-picking { border-color: #007aff; background: #f0f7ff; box-shadow: 0 0 0 2px rgba(0,122,255,0.1); }
+        .person-item { background: #111; border: 1px solid #333; border-radius: 10px; padding: 12px; position: relative; transition: all 0.2s; }
+        .person-item:hover { border-color: #444; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+        .person-item.active-picking { border-color: #007aff; background: #0b1526; box-shadow: 0 0 0 2px rgba(0,122,255,0.1); }
         
         .person-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .person-name-input { width: 80px; padding: 6px; border: none; background: transparent; font-weight: 600; color: #1d1d1f; border-bottom: 1px dashed #ccc; border-radius: 0; }
+        .person-name-input { width: 80px; padding: 6px; border: none; background: transparent; font-weight: 600; color: #fff; border-bottom: 1px dashed #666; border-radius: 0; }
         .person-name-input:focus { border-bottom-color: #007aff; outline: none; }
         
         .search-row { display: flex; gap: 6px; margin-bottom: 10px; }
-        .search-input { flex: 1; padding: 6px 8px; border: 1px solid #d2d2d7; border-radius: 6px; font-size: 13px; background: white; }
+        .search-input { flex: 1; padding: 6px 8px; border: 1px solid #333; border-radius: 6px; font-size: 13px; background: #111; color: #fff; }
         .search-input:focus { border-color: #007aff; outline: none; }
         
-        .person-coords { display: flex; gap: 8px; font-size: 12px; color: #86868b; margin-bottom: 8px; }
-        .person-coord-val { background: #e5e5ea; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+        .person-coords { display: flex; gap: 8px; font-size: 12px; color: #cfcfcf; margin-bottom: 8px; }
+        .person-coord-val { background: #222; padding: 2px 6px; border-radius: 4px; font-family: monospace; color: #fff; }
         
-        .mode-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #e5e5e5; font-size: 12px; background: #fff; margin-left: auto; }
+        .mode-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #333; font-size: 12px; background: #111; color: #fff; margin-left: auto; }
         
         .person-actions { display: flex; gap: 8px; }
         .btn-pick { flex: 1; font-size: 12px; padding: 6px; }
         
         .candidate-list { display: flex; flex-direction: column; gap: 12px; }
         
-        .candidate-item { padding: 16px; background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+        .candidate-item { padding: 16px; background: #111; border: 1px solid #333; border-radius: 12px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
         .candidate-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #e5e5e5; transition: background 0.2s; }
         .candidate-item:hover { border-color: #007aff; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
         .candidate-item:hover::before { background: #007aff; }
         
-        .candidate-title { font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .candidate-title { font-size: 15px; font-weight: 600; color: #fff; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
         .candidate-score { font-size: 14px; color: #007aff; font-weight: 700; background: #f0f7ff; padding: 2px 8px; border-radius: 12px; }
         
-        .candidate-address { font-size: 12px; color: #86868b; margin-bottom: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .candidate-address { font-size: 12px; color: #cfcfcf; margin-bottom: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         
-        .candidate-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #fbfbfd; padding: 10px; border-radius: 8px; }
+        .candidate-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #0f0f0f; padding: 10px; border-radius: 8px; }
         .stat-item { text-align: center; }
-        .stat-label { font-size: 11px; color: #86868b; margin-bottom: 2px; }
-        .stat-value { font-size: 13px; font-weight: 600; color: #1d1d1f; }
+        .stat-label { font-size: 11px; color: #cfcfcf; margin-bottom: 2px; }
+        .stat-value { font-size: 13px; font-weight: 600; color: #fff; }
         
         .status { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; gap: 4px; }
         .status-success { background: #d1fae5; color: #047857; }
@@ -105,14 +105,14 @@
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* 关键词标签样式 */
-        .keyword-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; padding: 6px; border: 1px solid #d2d2d7; border-radius: 8px; min-height: 44px; background: #fff; }
-        .tag { background: #e5e5ea; color: #1d1d1f; padding: 4px 10px; border-radius: 16px; font-size: 13px; display: flex; align-items: center; gap: 6px; user-select: none; }
+        .keyword-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; padding: 6px; border: 1px solid #333; border-radius: 8px; min-height: 44px; background: #111; }
+        .tag { background: #222; color: #fff; padding: 4px 10px; border-radius: 16px; font-size: 13px; display: flex; align-items: center; gap: 6px; user-select: none; }
         .tag i { cursor: pointer; font-style: normal; font-weight: bold; color: #86868b; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; }
         .tag i:hover { color: #fff; background: #ff3b30; }
         
         .common-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-        .common-tag { background: #fbfbfd; border: 1px solid #e5e5e5; color: #1d1d1f; padding: 4px 10px; border-radius: 16px; font-size: 12px; cursor: pointer; transition: all 0.2s; user-select: none; }
-        .common-tag:hover { border-color: #007aff; color: #007aff; background: #f0f7ff; }
+        .common-tag { background: #111; border: 1px solid #333; color: #fff; padding: 4px 10px; border-radius: 16px; font-size: 12px; cursor: pointer; transition: all 0.2s; user-select: none; }
+        .common-tag:hover { border-color: #007aff; color: #007aff; background: #0b1526; }
         
         .custom-input { display: flex; gap: 8px; margin-top: 8px; }
         
@@ -743,6 +743,9 @@
         renderKeywords();
         addPersonRow();
         addPersonRow();
+        document.addEventListener("DOMContentLoaded", () => {
+            loadMap();
+        });
     </script>
 </body>
 </html>
