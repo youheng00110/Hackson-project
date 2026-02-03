@@ -16,19 +16,22 @@
 
 运行方式：
     方式1 - 使用环境变量（推荐）：
-    BAIDU_MAP_AK=your_api_key_here python front.py
+    BAIDU_MAP_AK=PQs7CZEekMDpIjULh5eaG9OhuhNv1vsm python front.py
     
     方式2 - 在代码中设置（第41行）：
-    BAIDU_MAP_AK = "your_api_key_here"  # 不推荐，仅用于测试
+    BAIDU_MAP_AK = "PQs7CZEekMDpIjULh5eaG9OhuhNv1vsm"  # 不推荐，仅用于测试
     python front.py
 
 访问地址：
     http://localhost:5000
 
-注意事项：
-1. 百度地图 API Key (AK) 可在百度地图开放平台申请：https://lbsyun.baidu.com/
-2. 需要使用"浏览器端"类型的 AK
-3. 如果 AK 未配置，页面会显示清晰的错误提示，不会崩溃
+API Key 说明：
+1. 项目已配置浏览器端 AK: PQs7CZEekMDpIjULh5eaG9OhuhNv1vsm (用于交互)
+2. 如需申请新的 Key，访问：https://lbsyun.baidu.com/
+3. 必须使用"浏览器端"类型的 AK
+4. 如果 AK 未配置，页面会显示清晰的错误提示，不会崩溃
+
+注意：服务端计算使用另一个 Key (iwanSLLaXU0mNHxKG6MpczCl8bCVsvSe)，见 api_test/
 """
 
 import os

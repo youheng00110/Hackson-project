@@ -14,8 +14,8 @@
 
 **使用方法：**
 1. 打开 `map_test.html` 文件
-2. 将第 52 行的 `YOUR_BROWSER_AK_HERE` 替换为你的**浏览器端 AK**
-3. 用浏览器打开文件即可使用
+2. 浏览器端 AK 已配置为：`PQs7CZEekMDpIjULh5eaG9OhuhNv1vsm`
+3. 直接用浏览器打开文件即可使用
 
 ### 2. server_api_test.py
 服务端 API 测试脚本，用于测试后端路线规划和地理编码功能。
@@ -30,22 +30,29 @@
 
 **使用方法：**
 1. 安装依赖：`pip install requests`
-2. 打开 `server_api_test.py` 文件
-3. 将第 212 行的 `YOUR_SERVER_AK_HERE` 替换为你的**服务端 AK**
-4. 运行：`python server_api_test.py`
+2. 服务端 AK 已配置为：`iwanSLLaXU0mNHxKG6MpczCl8bCVsvSe`
+3. 直接运行：`python server_api_test.py`
 
 ## API Key 配置
 
+本项目已配置好百度地图 API Keys：
+
 ### 浏览器端 AK (map_test.html)
+- **已配置**: `PQs7CZEekMDpIjULh5eaG9OhuhNv1vsm`
+- **用途**: 用于交互、地图显示、POI 搜索、路线可视化
+- **位置**: 第 59 行
 ```html
-<!-- 第 52 行 -->
-<script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=YOUR_BROWSER_AK_HERE"></script>
+<!-- 第 59 行 -->
+<script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak=PQs7CZEekMDpIjULh5eaG9OhuhNv1vsm"></script>
 ```
 
 ### 服务端 AK (server_api_test.py)
+- **已配置**: `iwanSLLaXU0mNHxKG6MpczCl8bCVsvSe`
+- **用途**: 用于计算、路线规划、地理编码
+- **位置**: 第 288 行
 ```python
-# 第 212 行
-SERVER_AK = "YOUR_SERVER_AK_HERE"
+# 第 288 行
+SERVER_AK = "iwanSLLaXU0mNHxKG6MpczCl8bCVsvSe"
 ```
 
 ## 测试场景
