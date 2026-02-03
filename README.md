@@ -1,59 +1,124 @@
-<h1 style="color: yellow;">Hackson-project</h1>
+# 多人会面点智能推荐系统
 
- Demo
- =============
+基于百度地图 API 的多人会面点推荐应用，帮助多人快速找到最优会面地点。
 
-概览（要解决的问题）
------------------------
+## 功能特性
 
-目标：给定 N人的当前位置 + 出行方式（步行/驾车/公交/骑行）＋出发时间，自动找出一个或若干“候选会面点”，使得每个人到该点的通勤时间差异较小（比如到达时长接近、或最大到达时间最小化），并在真实地图上显示（用高德/百度地图 API 做路由/时间估算和可视化）。
-![alt text](image.png)
-![alt text](image-1.png)
+- 支持多人同时输入出发地点
+- 支持多种出行方式：步行、骑行、驾车、公交
+- 智能推荐最优会面点，最小化所有人到达时间差异
+- 地图可视化展示各人路线
+- 支持按类型筛选会面点（餐厅、咖啡馆、公园等）
+- IP 定位自动获取当前城市
 
+## 项目结构
 
-当前进展
-======
-**目前已经申请到了高德和百度的api，每天配额5000。我在apitest里测试了百度的，是ok的。大家也可以自行运行一下，一天5000次应该还是够用**
-
-## 百度地图 API Keys
-
-项目已配置两个百度地图 API Key，分别用于不同场景：
-
-### 浏览器端 AK (用于交互)
-- **Key**: `PQs7CZEekMDpIjULh5eaG9OhuhNv1vsm`
-- **用途**: 前端地图显示、POI 搜索、路线可视化
-- **使用位置**: `front.py`, `api_test/map_test.html`
-
-### 服务端 AK (用于计算)
-- **Key**: `iwanSLLaXU0mNHxKG6MpczCl8bCVsvSe`
-- **用途**: 后端路线计算、地理编码、距离计算
-- **使用位置**: `api_test/server_api_test.py`
-
-**注意**: 两个 AK 功能不同，请勿混用。详见 `.env.example` 文件。
-
-## 前端导航系统
-已实现基于百度地图的导航系统前端（`front.py`），功能包括：
-- ✅ 百度地图显示和交互
-- ✅ POI 地点搜索
-- ✅ 起点/终点输入与路线规划（驾车/步行/公交/骑行）
-- ✅ 友好的用户界面
-
-### 快速开始
-```bash
-# 1. 安装依赖
-pip install -r requirements.txt
-
-# 2. 使用浏览器端 API Key 运行前端
-BAIDU_MAP_AK=PQs7CZEekMDpIjULh5eaG9OhuhNv1vsm python front.py
-
-# 3. 打开浏览器访问
-http://localhost:5000
+```
+meeting-point-recommender/
+├── backend/                 # 后端服务
+│   ├── src/
+│   │   ├── app.js          # Express 应用入口
+│   │   ├── config/         # 配置文件
+│   │   ├── controllers/    # 控制器
+│   │   ├── routes/         # 路由
+│   │   ├── services/       # 业务逻辑
+│   │   └── utils/          # 工具函数
+│   └── package.json
+├── frontend/                # 前端应用
+│   ├── src/
+│   │   ├── components/     # React 组件
+│   │   ├── services/       # API 服务
+│   │   ├── App.jsx         # 主应用组件
+│   │   └── main.jsx        # 入口文件
+│   └── package.json
+└── README.md
 ```
 
-详细使用说明请查看 `front.py` 文件顶部的注释。
+## 技术栈
 
-PS：
-----
-**1. 百度用的是百度坐标系，和高德的火星坐标系不一样，记得注意一下，不过百度好像只是坐标转换**
+**前端：**
+- React 18
+- Vite
+- 百度地图 JavaScript API
 
-**2. 好像要交互得用浏览器api，要规划之类的要用服务端api**
+**后端：**
+- Node.js
+- Express
+- 百度地图 Web 服务 API
+
+## 快速开始
+
+### 环境要求
+
+- Node.js >= 16
+- npm >= 8
+
+### 配置
+
+1. 后端配置：在 `meeting-point-recommender/backend/` 目录下创建 `.env` 文件：
+
+```env
+BMAP_SERVER_KEY=your_baidu_server_api_key
+PORT=3001
+```
+
+2. 前端配置：在 `meeting-point-recommender/frontend/` 目录下创建 `.env` 文件：
+
+```env
+VITE_BMAP_WEB_KEY=your_baidu_browser_api_key
+VITE_API_URL=http://localhost:3001/api
+```
+
+### 安装依赖
+
+```bash
+# 后端
+cd meeting-point-recommender/backend
+npm install
+
+# 前端
+cd meeting-point-recommender/frontend
+npm install
+```
+
+### 启动服务
+
+```bash
+# 启动后端（端口 3001）
+cd meeting-point-recommender/backend
+node src/app.js
+
+# 启动前端（端口 5173）
+cd meeting-point-recommender/frontend
+npm run dev
+```
+
+访问 http://localhost:5173 即可使用。
+
+## 使用说明
+
+1. 添加参与会面的人员信息（姓名、出发地点、出行方式）
+2. 选择会面点类型（可选）
+3. 点击"寻找会面点"按钮
+4. 系统自动计算并推荐最优会面点
+5. 在地图上查看各人路线和会面点位置
+
+## API 密钥申请
+
+需要在 [百度地图开放平台](https://lbsyun.baidu.com/) 申请两个应用：
+
+1. **浏览器端应用**：用于前端地图展示
+2. **服务端应用**：用于后端路径规划和 POI 搜索
+
+## 算法说明
+
+会面点推荐算法采用加权中心点 + 多维度评分机制：
+
+- 时间方差权重：40%
+- 最大时间差权重：30%
+- 平均到达时间权重：20%
+- 总距离权重：10%
+
+## License
+
+MIT
