@@ -132,6 +132,18 @@ def _route_duration_seconds(person: Person, dest_lat: float, dest_lng: float, ci
         if person.depart_time:
             params["departure_time"] = person.depart_time
         data = _call_baidu(TRANSIT_URL, params)
+    elif mode == "subway":
+        if not city:
+            return None
+        params = {
+            "origin": origin,
+            "destination": destination,
+            "city": city,
+            "tactics_incity": 5,  # 5: 地铁优先
+        }
+        if person.depart_time:
+            params["departure_time"] = person.depart_time
+        data = _call_baidu(TRANSIT_URL, params)
     elif mode == "walking":
         params = {
             "origin": origin,
