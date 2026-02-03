@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>多人会面点计算 - 百度地图</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background: #f7f7fb;
+        }
+        #container {
+            width: 100%;
+            height: 60vh;
+        }
+        .panel {
+            padding: 16px;
+            background: #ffffff;
+            border-top: 1px solid #e6e6e6;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .row label {
+            font-weight: bold;
+            width: 110px;
+        }
+        input, select, button, textarea {
+            padding: 6px 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background: #2b7cff;
+            color: #fff;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover {
+            background: #1f66d1;
+        }
+        .people-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+        .people-table th, .people-table td {
+            border: 1px solid #e2e2e2;
+            padding: 6px;
+            text-align: left;
+            font-size: 14px;
+        }
+        .people-table th {
+            background: #f2f5ff;
+        }
+        .candidate-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 8px;
+            border: 1px solid #e2e2e2;
+            padding: 8px;
+            background: #fafafa;
+        }
+        .candidate-item {
+            padding: 6px;
+            border-bottom: 1px dashed #ddd;
+            cursor: pointer;
+        }
+        .candidate-item:last-child {
+            border-bottom: none;
+        }
+        .candidate-item:hover {
+            background: #eef5ff;
+        }
+        .status {
+            color: #555;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+
+    <div class="panel">
+        <div class="row">
+            <label>浏览器端 AK</label>
+            <input id="jsAk" type="text" placeholder="填写百度地图 JS AK" style="width: 260px;" />
+            <button onclick="loadMap()">加载地图</button>
+            <span class="status" id="mapStatus">未加载</span>
+        </div>
+
+        <div class="row">
+            <label>城市（公交）</label>
+            <input id="city" type="text" value="北京市" />
+            <label>POI 关键字</label>
+            <input id="query" type="text" value="咖啡厅$商场$地铁站" style="width: 240px;" />
+            <label>半径(米)</label>
+            <input id="radius" type="number" value="3000" style="width: 100px;" />
+            <label>Top K</label>
+            <input id="topK" type="number" value="5" style="width: 80px;" />
+            <button onclick="findMeetingPoints()">查找会面点</button>
+        </div>
+
+        <div class="row">
+            <button onclick="addPersonRow()">添加人员</button>
+            <button onclick="clearRoutes()">清除路线</button>
+            <button onclick="clearCandidates()">清除候选点</button>
+        </div>
+
+        <table class="people-table" id="peopleTable">
+            <thead>
+                <tr>
+                    <th>姓名</th>
+                    <th>纬度</th>
+                    <th>经度</th>
+                    <th>出行方式</th>
+                    <th>出发时间</th>
+                    <th>点选坐标</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="row">
+            <label>候选会面点</label>
+        </div>
+        <div class="candidate-list" id="candidateList"></div>
+    </div>
+
+    <script>
+        let map = null;
+        let mapLoaded = false;
+        let activeRowIndex = -1;
+        let personMarkers = [];
+        let candidateMarkers = [];
+        let routePlanners = [];
+
+        function loadMap() {
+            const ak = document.getElementById("jsAk").value.trim();
+            if (!ak) {
+                alert("请填写浏览器端 AK");
+                return;
+            }
+            if (mapLoaded) {
+                return;
+            }
+            const script = document.createElement("script");
+            script.type = "text/javascript";
+            script.src = `https://api.map.baidu.com/api?v=3.0&ak=${ak}`;
+            script.onload = () => {
+                initMap();
+                mapLoaded = true;
+                document.getElementById("mapStatus").innerText = "已加载";
+            };
+            script.onerror = () => {
+                document.getElementById("mapStatus").innerText = "加载失败";
+                alert("地图加载失败，请检查 AK 是否正确");
+            };
+            document.head.appendChild(script);
+        }
+
+        function initMap() {
+            map = new BMap.Map("container");
+            const center = new BMap.Point(116.404, 39.915);
+            map.centerAndZoom(center, 12);
+            map.enableScrollWheelZoom(true);
+            map.addControl(new BMap.NavigationControl());
+            map.addControl(new BMap.ScaleControl());
+            map.addControl(new BMap.MapTypeControl());
+
+            map.addEventListener("click", (e) => {
+                if (activeRowIndex < 0) {
+                    return;
+                }
+                const row = document.querySelector(`#peopleTable tbody tr[data-index='${activeRowIndex}']`);
+                if (!row) {
+                    return;
+                }
+                row.querySelector(".lat").value = e.point.lat.toFixed(6);
+                row.querySelector(".lng").value = e.point.lng.toFixed(6);
+                activeRowIndex = -1;
+                refreshPersonMarkers();
+            });
+        }
+
+        function addPersonRow() {
+            const tbody = document.querySelector("#peopleTable tbody");
+            const index = tbody.children.length;
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-index", index);
+            tr.innerHTML = `
+                <td><input type="text" class="name" value="P${index + 1}" /></td>
+                <td><input type="number" step="0.000001" class="lat" value="39.915" /></td>
+                <td><input type="number" step="0.000001" class="lng" value="116.404" /></td>
+                <td>
+                    <select class="mode">
+                        <option value="walking">步行</option>
+                        <option value="driving">驾车</option>
+                        <option value="transit">公交</option>
+                        <option value="riding">骑行</option>
+                    </select>
+                </td>
+                <td><input type="text" class="depart" placeholder="YYYY-MM-DD HH:mm" /></td>
+                <td><button onclick="pickPoint(${index})">点选</button></td>
+            `;
+            tbody.appendChild(tr);
+            refreshPersonMarkers();
+        }
+
+        function pickPoint(index) {
+            activeRowIndex = index;
+            alert("请在地图上点击选点");
+        }
+
+        function getPersons() {
+            const rows = document.querySelectorAll("#peopleTable tbody tr");
+            const persons = [];
+            rows.forEach((row) => {
+                persons.push({
+                    name: row.querySelector(".name").value.trim(),
+                    lat: parseFloat(row.querySelector(".lat").value),
+                    lng: parseFloat(row.querySelector(".lng").value),
+                    mode: row.querySelector(".mode").value,
+                    depart_time: row.querySelector(".depart").value.trim(),
+                });
+            });
+            return persons;
+        }
+
+        function refreshPersonMarkers() {
+            if (!map) {
+                return;
+            }
+            personMarkers.forEach((m) => map.removeOverlay(m));
+            personMarkers = [];
+            const persons = getPersons();
+            persons.forEach((p, i) => {
+                const pt = new BMap.Point(p.lng, p.lat);
+                const marker = new BMap.Marker(pt);
+                marker.setLabel(new BMap.Label(p.name || `P${i + 1}`, { offset: new BMap.Size(10, -10) }));
+                map.addOverlay(marker);
+                personMarkers.push(marker);
+            });
+        }
+
+        function clearRoutes() {
+            routePlanners.forEach((planner) => {
+                if (planner && planner.clearResults) {
+                    planner.clearResults();
+                }
+            });
+            routePlanners = [];
+        }
+
+        function clearCandidates() {
+            candidateMarkers.forEach((m) => map.removeOverlay(m));
+            candidateMarkers = [];
+            document.getElementById("candidateList").innerHTML = "";
+        }
+
+        async function findMeetingPoints() {
+            if (!mapLoaded) {
+                alert("请先加载地图");
+                return;
+            }
+            const persons = getPersons();
+            if (!persons.length) {
+                alert("请先添加人员");
+                return;
+            }
+            refreshPersonMarkers();
+
+            const payload = {
+                persons,
+                city: document.getElementById("city").value.trim(),
+                query: document.getElementById("query").value.trim(),
+                radius: parseInt(document.getElementById("radius").value),
+                top_k: parseInt(document.getElementById("topK").value),
+            };
+
+            const res = await fetch("/api/meeting_points", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const text = await res.text();
+                alert(`请求失败: ${text}`);
+                return;
+            }
+
+            const data = await res.json();
+            renderCandidates(data.candidates || []);
+        }
+
+        function renderCandidates(candidates) {
+            clearCandidates();
+            clearRoutes();
+
+            const list = document.getElementById("candidateList");
+            candidates.forEach((c, idx) => {
+                const pt = new BMap.Point(c.location.lng, c.location.lat);
+                const marker = new BMap.Marker(pt);
+                marker.setLabel(new BMap.Label(`候选${idx + 1}`, { offset: new BMap.Size(10, -10) }));
+                map.addOverlay(marker);
+                candidateMarkers.push(marker);
+
+                const div = document.createElement("div");
+                div.className = "candidate-item";
+                div.innerHTML = `
+                    <div><strong>${idx + 1}. ${c.name || "(未命名)"}</strong></div>
+                    <div>${c.address || ""}</div>
+                    <div>max: ${formatSeconds(c.max_time)} | min: ${formatSeconds(c.min_time)} | gap: ${formatSeconds(c.gap)} | score: ${c.score}</div>
+                `;
+                div.onclick = () => showRoutesToCandidate(c);
+                list.appendChild(div);
+            });
+        }
+
+        function showRoutesToCandidate(candidate) {
+            clearRoutes();
+            const persons = getPersons();
+            const destPoint = new BMap.Point(candidate.location.lng, candidate.location.lat);
+
+            persons.forEach((p) => {
+                const originPoint = new BMap.Point(p.lng, p.lat);
+                if (p.mode === "driving") {
+                    const planner = new BMap.DrivingRoute(map, {
+                        policy: BMAP_DRIVING_POLICY_LEAST_TIME,
+                        renderOptions: { map: map, autoViewport: false },
+                    });
+                    planner.search(originPoint, destPoint);
+                    routePlanners.push(planner);
+                } else if (p.mode === "transit") {
+                    const planner = new BMap.TransitRoute(map, {
+                        policy: BMAP_TRANSIT_POLICY_LEAST_TIME,
+                        renderOptions: { map: map, autoViewport: false },
+                    });
+                    planner.search(originPoint, destPoint);
+                    routePlanners.push(planner);
+                } else if (p.mode === "walking") {
+                    const planner = new BMap.WalkingRoute(map, {
+                        renderOptions: { map: map, autoViewport: false },
+                    });
+                    planner.search(originPoint, destPoint);
+                    routePlanners.push(planner);
+                } else if (p.mode === "riding") {
+                    const planner = new BMap.RidingRoute(map, {
+                        renderOptions: { map: map, autoViewport: false },
+                    });
+                    planner.search(originPoint, destPoint);
+                    routePlanners.push(planner);
+                }
+            });
+
+            map.panTo(destPoint);
+        }
+
+        function formatSeconds(seconds) {
+            if (seconds === null || seconds === undefined) {
+                return "-";
+            }
+            const minutes = Math.round(seconds / 60);
+            if (minutes < 60) {
+                return `${minutes} 分钟`;
+            }
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return `${h} 小时 ${m} 分钟`;
+        }
+
+        addPersonRow();
+        addPersonRow();
+    </script>
+</body>
+</html>
