@@ -105,6 +105,11 @@
             <input id="radius" type="number" value="3000" style="width: 100px;" />
             <label>Top K</label>
             <input id="topK" type="number" value="5" style="width: 80px;" />
+            <label>优化</label>
+            <select id="optimize" style="width: 140px;">
+                <option value="time_gap">时间差最小</option>
+                <option value="distance">路程最小</option>
+            </select>
             <button onclick="findMeetingPoints()">查找会面点</button>
         </div>
 
@@ -283,6 +288,7 @@
                 query: document.getElementById("query").value.trim(),
                 radius: parseInt(document.getElementById("radius").value),
                 top_k: parseInt(document.getElementById("topK").value),
+                optimize: document.getElementById("optimize").value,
             };
 
             const res = await fetch("/api/meeting_points", {
@@ -315,10 +321,14 @@
 
                 const div = document.createElement("div");
                 div.className = "candidate-item";
+                const optimize = c.optimize || document.getElementById("optimize").value;
+                const statLine = optimize === "distance"
+                    ? `sum: ${formatDistance(c.sum_distance_m)} | max: ${formatDistance(c.max_distance_m)} | score: ${c.score}`
+                    : `max: ${formatSeconds(c.max_time)} | min: ${formatSeconds(c.min_time)} | gap: ${formatSeconds(c.gap)} | score: ${c.score}`;
                 div.innerHTML = `
                     <div><strong>${idx + 1}. ${c.name || "(未命名)"}</strong></div>
                     <div>${c.address || ""}</div>
-                    <div>max: ${formatSeconds(c.max_time)} | min: ${formatSeconds(c.min_time)} | gap: ${formatSeconds(c.gap)} | score: ${c.score}</div>
+                    <div>${statLine}</div>
                 `;
                 div.onclick = () => showRoutesToCandidate(c);
                 list.appendChild(div);
@@ -375,6 +385,16 @@
             const h = Math.floor(minutes / 60);
             const m = minutes % 60;
             return `${h} 小时 ${m} 分钟`;
+        }
+
+        function formatDistance(meters) {
+            if (meters === null || meters === undefined) {
+                return "-";
+            }
+            if (meters < 1000) {
+                return `${Math.round(meters)} 米`;
+            }
+            return `${(meters / 1000).toFixed(2)} 公里`;
         }
 
         addPersonRow();

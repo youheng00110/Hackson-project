@@ -188,6 +188,15 @@
                             <input id="radius" type="number" value="3000" />
                         </div>
                     </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>优化目标</label>
+                            <select id="objective">
+                                <option value="time_gap" selected>时间差最小</option>
+                                <option value="distance">路途距离最小</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="input-group">
                         <label>场所关键词 (已选)</label>
                         <!-- 隐藏的 input 用于兼容旧逻辑，但实际值会在 JS 中更新 -->
@@ -304,6 +313,12 @@
             const h = Math.floor(minutes / 60);
             const m = minutes % 60;
             return `${h} 小时 ${m} 分钟`;
+        }
+
+        function formatDistance(meters) {
+            if (meters === null || meters === undefined) return "-";
+            if (meters < 1000) return `${meters} 米`;
+            return `${(meters / 1000).toFixed(2)} 公里`;
         }
 
         function loadMap() {
@@ -606,7 +621,8 @@
                 city: document.getElementById("city").value.trim(),
                 query: document.getElementById("query").value.trim(),
                 radius: parseInt(document.getElementById("radius").value),
-                top_k: parseInt(document.getElementById("topK").value)
+                top_k: parseInt(document.getElementById("topK").value),
+                objective: document.getElementById("objective").value
             };
 
             try {
@@ -640,17 +656,24 @@
                 return;
             }
 
+            const objective = document.getElementById("objective").value;
+
             candidates.forEach((c, i) => {
                 // DOM 列表
                 const div = document.createElement("div");
                 div.className = "candidate-item";
-                div.innerHTML = `
-                    <div class="candidate-title">
-                        <span>${i+1}. ${c.name}</span>
-                        <span class="candidate-score">Score: ${c.score.toFixed(1)}</span>
-                    </div>
-                    <div class="candidate-address">${c.address || "地址未知"}</div>
-                    <div class="candidate-stats">
+                const statsHtml = objective === "distance"
+                    ? `
+                        <div class="stat-item">
+                            <div class="stat-label">总路程</div>
+                            <div class="stat-value">${formatDistance(c.total_distance)}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">最长路程</div>
+                            <div class="stat-value">${formatDistance(c.max_distance)}</div>
+                        </div>
+                    `
+                    : `
                         <div class="stat-item">
                             <div class="stat-label">最长耗时</div>
                             <div class="stat-value">${formatSeconds(c.max_time)}</div>
@@ -659,6 +682,15 @@
                             <div class="stat-label">最大时差</div>
                             <div class="stat-value">${formatSeconds(c.gap)}</div>
                         </div>
+                    `;
+                div.innerHTML = `
+                    <div class="candidate-title">
+                        <span>${i+1}. ${c.name}</span>
+                        <span class="candidate-score">Score: ${c.score.toFixed(1)}</span>
+                    </div>
+                    <div class="candidate-address">${c.address || "地址未知"}</div>
+                    <div class="candidate-stats">
+                        ${statsHtml}
                     </div>
                 `;
                 div.onclick = () => showRoute(c);

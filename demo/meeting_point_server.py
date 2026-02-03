@@ -112,7 +112,7 @@ def _place_search_around(
     return data.get("results", [])
 
 
-def _route_duration_seconds(person: Person, dest_lat: float, dest_lng: float, city: str) -> Optional[int]:
+def _route_metrics(person: Person, dest_lat: float, dest_lng: float, city: str) -> Optional[Dict[str, int]]:
     origin = f"{person.lat},{person.lng}"
     destination = f"{dest_lat},{dest_lng}"
     mode = person.mode.lower().strip()
@@ -173,9 +173,10 @@ def _route_duration_seconds(person: Person, dest_lat: float, dest_lng: float, ci
         return None
 
     duration = routes[0].get("duration")
-    if duration is None:
+    distance = routes[0].get("distance")
+    if duration is None or distance is None:
         return None
-    return int(duration)
+    return {"duration": int(duration), "distance": int(distance)}
 
 
 def _score_times(times: List[int]) -> Dict[str, Any]:
@@ -183,7 +184,8 @@ def _score_times(times: List[int]) -> Dict[str, Any]:
     min_time = min(times)
     avg_time = sum(times) / len(times)
     gap = max_time - min_time
-    score = max_time + 0.35 * gap
+    # 以“时间差最小”为首要目标，辅以最大耗时做轻微区分
+    score = gap + 0.01 * max_time
     variance = sum((t - avg_time) ** 2 for t in times) / len(times)
     std = math.sqrt(variance)
     return {
@@ -192,6 +194,26 @@ def _score_times(times: List[int]) -> Dict[str, Any]:
         "avg_time": int(avg_time),
         "gap": int(gap),
         "std": round(std, 2),
+        "score": round(score, 2),
+    }
+
+
+def _score_distances(distances: List[int]) -> Dict[str, Any]:
+    max_distance = max(distances)
+    min_distance = min(distances)
+    avg_distance = sum(distances) / len(distances)
+    total_distance = sum(distances)
+    gap = max_distance - min_distance
+    score = total_distance + 0.1 * max_distance
+    variance = sum((d - avg_distance) ** 2 for d in distances) / len(distances)
+    std = math.sqrt(variance)
+    return {
+        "max_distance": int(max_distance),
+        "min_distance": int(min_distance),
+        "avg_distance": int(avg_distance),
+        "total_distance": int(total_distance),
+        "gap_distance": int(gap),
+        "std_distance": round(std, 2),
         "score": round(score, 2),
     }
 
@@ -247,6 +269,9 @@ def meeting_points():
     top_k = int(payload.get("top_k") or 5)
     city = str(payload.get("city") or "")
     page_size = int(payload.get("page_size") or 20)
+    objective = str(payload.get("objective") or "time_gap").lower().strip()
+    if objective not in {"time_gap", "distance"}:
+        objective = "time_gap"
 
     center = _get_centroid(persons)
 
@@ -289,18 +314,20 @@ def meeting_points():
             continue
 
         times: List[int] = []
+        distances: List[int] = []
         valid = True
         for p in persons:
-            duration = _route_duration_seconds(p, float(lat), float(lng), city)
-            if duration is None:
+            metrics = _route_metrics(p, float(lat), float(lng), city)
+            if metrics is None:
                 valid = False
                 break
-            times.append(duration)
+            times.append(metrics["duration"])
+            distances.append(metrics["distance"])
 
         if not valid:
             continue
 
-        metrics = _score_times(times)
+        metrics = _score_times(times) if objective == "time_gap" else _score_distances(distances)
         results.append(
             {
                 "name": c.get("name"),
@@ -308,6 +335,8 @@ def meeting_points():
                 "uid": c.get("uid"),
                 "location": {"lat": float(lat), "lng": float(lng)},
                 "times": times,
+                "distances": distances,
+                "objective": objective,
                 **metrics,
             }
         )
@@ -316,6 +345,7 @@ def meeting_points():
     return jsonify(
         {
             "center": center,
+            "objective": objective,
             "candidates": results[: max(top_k, 1)],
         }
     )
