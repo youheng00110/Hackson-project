@@ -164,8 +164,24 @@
                     <div class="section-title">搜索参数</div>
                     <div class="input-row">
                         <div class="input-group">
-                            <label>城市</label>
-                            <input id="city" type="text" value="北京市" />
+                            <label>城市 <span style="float: right; color: #007aff; cursor: pointer; font-weight: normal;" onclick="autoLocateCity()" title="点击根据IP自动定位">📍 自动定位</span></label>
+                            <input id="city" type="text" value="北京市" list="cityDataList" placeholder="输入或选择城市" />
+                            <datalist id="cityDataList">
+                                <option value="北京市">
+                                <option value="上海市">
+                                <option value="广州市">
+                                <option value="深圳市">
+                                <option value="成都市">
+                                <option value="杭州市">
+                                <option value="武汉市">
+                                <option value="西安市">
+                                <option value="重庆市">
+                                <option value="南京市">
+                                <option value="天津市">
+                                <option value="苏州市">
+                                <option value="长沙市">
+                                <option value="郑州市">
+                            </datalist>
                         </div>
                         <div class="input-group">
                             <label>搜索半径 (米)</label>
@@ -331,6 +347,27 @@
                 if (activePersonId !== null) {
                     resolveLocation(e.point, activePersonId);
                     endPicking();
+                }
+            });
+            
+            // 初始化完成后尝试自动定位城市
+            autoLocateCity(true);
+        }
+
+        function autoLocateCity(isAuto = false) {
+            if (!map) {
+                if (!isAuto) alert("请先加载地图");
+                return;
+            }
+            const myCity = new BMap.LocalCity();
+            myCity.get((result) => {
+                const cityName = result.name;
+                // 如果是手动点击，或者当前输入框是默认值，则更新
+                const currentVal = document.getElementById("city").value;
+                if (!isAuto || currentVal === "北京市" || currentVal === "") {
+                    document.getElementById("city").value = cityName;
+                    map.setCenter(cityName);
+                    console.log("Auto located city:", cityName);
                 }
             });
         }

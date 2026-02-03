@@ -245,6 +245,18 @@ def meeting_points():
     center = _get_centroid(persons)
     candidates = _place_search_around(center, query, radius, page_size)
 
+    # 策略1：如果第一轮没找到候选点，尝试扩大半径再次搜索
+    if not candidates:
+        new_radius = radius * 2
+        print(f"[INFO] 初始半径 {radius}m 未找到结果，尝试扩大至 {new_radius}m")
+        candidates = _place_search_around(center, query, new_radius, page_size)
+    
+    # 策略2：如果还是没找到，尝试仅搜索第一个关键词
+    if not candidates and "$" in query:
+        first_query = query.split("$")[0]
+        print(f"[INFO] 仍未找到结果，尝试简化关键词为: {first_query}")
+        candidates = _place_search_around(center, first_query, radius * 2, page_size)
+
     results: List[Dict[str, Any]] = []
     for c in candidates:
         location = c.get("location") or {}
