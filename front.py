@@ -18,7 +18,7 @@
     方式1 - 使用环境变量（推荐）：
     BAIDU_MAP_AK=your_api_key_here python front.py
     
-    方式2 - 在代码中设置（第29行）：
+    方式2 - 在代码中设置（第41行）：
     BAIDU_MAP_AK = "your_api_key_here"  # 不推荐，仅用于测试
     python front.py
 
@@ -500,7 +500,9 @@ HTML_TEMPLATE = """
         function jumpToPOI(lng, lat, title) {
             var point = new BMap.Point(lng, lat);
             map.centerAndZoom(point, 16);
-            map.addOverlay(new BMap.Marker(point));
+            var marker = new BMap.Marker(point);
+            map.addOverlay(marker);
+            poiMarkers.push(marker);
         }
         
         // 清除POI搜索结果
