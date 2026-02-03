@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多人会面点计算 - 百度地图</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; height: 100vh; display: flex; flex-direction: column; background-color: #f5f5f7; }
+        
+        .header { background: #fff; color: #333; padding: 15px 25px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); z-index: 10; display: flex; align-items: center; justify-content: space-between; }
+        .header-left h1 { font-size: 20px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px; }
+        .header-left p { font-size: 13px; color: #86868b; }
+        
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        
+        .map-container { flex: 1; position: relative; }
+        #container { width: 100%; height: 100%; }
+        
+        /* 地图选点时的十字光标 */
+        .picking-point #container { cursor: crosshair !important; }
+        
+        /* 选点提示条 */
+        .map-tip { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 14px; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 999; backdrop-filter: blur(4px); }
+        .map-tip.show { opacity: 1; }
+        
+        .control-panel { width: 420px; background: white; padding: 0; overflow-y: auto; box-shadow: -1px 0 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; border-left: 1px solid #e5e5e5; }
+        
+        .panel-content { padding: 24px; flex: 1; }
+        
+        .section { margin-bottom: 24px; background: #fff; border-radius: 12px; }
+        
+        .section-title { font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .section-title::before { content: ''; width: 4px; height: 16px; background: #007aff; border-radius: 2px; }
+        
+        .input-group { margin-bottom: 16px; }
+        .input-group label { display: block; font-size: 12px; color: #86868b; margin-bottom: 6px; font-weight: 500; }
+        .input-group input, .input-group select { width: 100%; padding: 10px 12px; border: 1px solid #d2d2d7; border-radius: 8px; font-size: 14px; transition: all 0.2s; background: #fbfbfd; color: #1d1d1f; }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: #007aff; background: #fff; box-shadow: 0 0 0 4px rgba(0,122,255,0.1); }
+        
+        .input-row { display: flex; gap: 12px; }
+        .input-row .input-group { flex: 1; }
+        
+        .button-group { display: flex; gap: 12px; margin-top: 20px; }
+        
+        .btn { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        
+        .btn-primary { background: #007aff; color: white; }
+        .btn-primary:hover { background: #0062cc; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,122,255,0.25); }
+        .btn-primary:active { transform: translateY(0); }
+        
+        .btn-secondary { background: #f2f2f7; color: #1d1d1f; }
+        .btn-secondary:hover { background: #e5e5ea; }
+        
+        .btn-danger { background: #fff0f0; color: #ff3b30; }
+        .btn-danger:hover { background: #ffdede; }
+        
+        .btn-icon-only { padding: 6px; width: 28px; height: 28px; border-radius: 6px; flex: none; }
+        
+        .people-list { display: flex; flex-direction: column; gap: 12px; }
+        
+        .person-item { background: #fbfbfd; border: 1px solid #e5e5e5; border-radius: 10px; padding: 12px; position: relative; transition: all 0.2s; }
+        .person-item:hover { border-color: #d2d2d7; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+        .person-item.active-picking { border-color: #007aff; background: #f0f7ff; box-shadow: 0 0 0 2px rgba(0,122,255,0.1); }
+        
+        .person-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .person-name-input { width: 80px; padding: 6px; border: none; background: transparent; font-weight: 600; color: #1d1d1f; border-bottom: 1px dashed #ccc; border-radius: 0; }
+        .person-name-input:focus { border-bottom-color: #007aff; outline: none; }
+        
+        .search-row { display: flex; gap: 6px; margin-bottom: 10px; }
+        .search-input { flex: 1; padding: 6px 8px; border: 1px solid #d2d2d7; border-radius: 6px; font-size: 13px; background: white; }
+        .search-input:focus { border-color: #007aff; outline: none; }
+        
+        .person-coords { display: flex; gap: 8px; font-size: 12px; color: #86868b; margin-bottom: 8px; }
+        .person-coord-val { background: #e5e5ea; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+        
+        .mode-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #e5e5e5; font-size: 12px; background: #fff; margin-left: auto; }
+        
+        .person-actions { display: flex; gap: 8px; }
+        .btn-pick { flex: 1; font-size: 12px; padding: 6px; }
+        
+        .candidate-list { display: flex; flex-direction: column; gap: 12px; }
+        
+        .candidate-item { padding: 16px; background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+        .candidate-item::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #e5e5e5; transition: background 0.2s; }
+        .candidate-item:hover { border-color: #007aff; transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.06); }
+        .candidate-item:hover::before { background: #007aff; }
+        
+        .candidate-title { font-size: 15px; font-weight: 600; color: #1d1d1f; margin-bottom: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .candidate-score { font-size: 14px; color: #007aff; font-weight: 700; background: #f0f7ff; padding: 2px 8px; border-radius: 12px; }
+        
+        .candidate-address { font-size: 12px; color: #86868b; margin-bottom: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        .candidate-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: #fbfbfd; padding: 10px; border-radius: 8px; }
+        .stat-item { text-align: center; }
+        .stat-label { font-size: 11px; color: #86868b; margin-bottom: 2px; }
+        .stat-value { font-size: 13px; font-weight: 600; color: #1d1d1f; }
+        
+        .status { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; gap: 4px; }
+        .status-success { background: #d1fae5; color: #047857; }
+        .status-warning { background: #fef3c7; color: #b45309; }
+        
+        .loading-mask { position: absolute; inset: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); z-index: 100; border-radius: 12px; }
+        .spinner { width: 24px; height: 24px; border: 3px solid #e5e5e5; border-top-color: #007aff; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* 关键词标签样式 */
+        .keyword-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; padding: 6px; border: 1px solid #d2d2d7; border-radius: 8px; min-height: 44px; background: #fff; }
+        .tag { background: #e5e5ea; color: #1d1d1f; padding: 4px 10px; border-radius: 16px; font-size: 13px; display: flex; align-items: center; gap: 6px; user-select: none; }
+        .tag i { cursor: pointer; font-style: normal; font-weight: bold; color: #86868b; width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: all 0.2s; }
+        .tag i:hover { color: #fff; background: #ff3b30; }
+        
+        .common-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .common-tag { background: #fbfbfd; border: 1px solid #e5e5e5; color: #1d1d1f; padding: 4px 10px; border-radius: 16px; font-size: 12px; cursor: pointer; transition: all 0.2s; user-select: none; }
+        .common-tag:hover { border-color: #007aff; color: #007aff; background: #f0f7ff; }
+        
+        .custom-input { display: flex; gap: 8px; margin-top: 8px; }
+        
+        /* 隐藏经纬度输入框，只读显示 */
+        .hidden-input { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <h1>📍 多人会面点智能计算</h1>
+            <p>Smart Meeting Point Finder</p>
+        </div>
+        <div class="header-right">
+            <!-- 预留右上角功能 -->
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="map-container">
+            <div id="container"></div>
+            <div class="map-tip" id="mapTip">地图选点或拖拽红色标记</div>
+        </div>
+        
+        <div class="control-panel">
+            <div class="panel-content">
+                <!-- 地图加载 -->
+                <div class="section">
+                    <div class="section-title">地图配置 <span class="status status-warning" id="mapStatus" style="margin-left: auto; font-weight: normal;">● 未加载</span></div>
+                    <div class="input-group">
+                        <input id="jsAk" type="text" placeholder="输入百度地图 JS AK" value="PQs7CZEekMDpIjULh5eaG9OhuhNv1vsm" />
+                    </div>
+                    <button class="btn btn-primary" onclick="loadMap()" style="width: 100%">加载地图资源</button>
+                </div>
+                
+                <!-- 人员配置 -->
+                <div class="section">
+                    <div class="section-title">
+                        人员位置
+                        <button class="btn btn-secondary btn-small" onclick="addPersonRow()" style="margin-left: auto; padding: 4px 12px; font-size: 12px;">+ 添加</button>
+                    </div>
+                    <div class="people-list" id="peopleList">
+                        <!-- 人员列表容器 -->
+                    </div>
+                </div>
+                
+                <!-- 搜索参数 -->
+                <div class="section">
+                    <div class="section-title">搜索参数</div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label>城市</label>
+                            <input id="city" type="text" value="北京市" />
+                        </div>
+                        <div class="input-group">
+                            <label>搜索半径 (米)</label>
+                            <input id="radius" type="number" value="3000" />
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>场所关键词 (已选)</label>
+                        <!-- 隐藏的 input 用于兼容旧逻辑，但实际值会在 JS 中更新 -->
+                        <input id="query" type="hidden" value="咖啡厅$商场$地铁站" />
+                        
+                        <div class="keyword-tags" id="selectedKeywords"></div>
+                        
+                        <div class="custom-input">
+                            <input type="text" id="customKeyword" placeholder="自定义关键词" style="font-size: 13px;" onkeydown="if(event.keyCode==13) addCustomKeyword()">
+                            <button class="btn btn-secondary btn-small" onclick="addCustomKeyword()" style="flex: 0 0 auto; width: 32px; padding: 0;">+</button>
+                        </div>
+
+                        <div style="margin-top: 8px; font-size: 11px; color: #86868b; margin-bottom: 4px;">常用推荐:</div>
+                        <div class="common-tags" id="commonKeywords"></div>
+                    </div>
+                    <div class="input-group">
+                        <label>候选结果数量</label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input id="topK" type="range" min="1" max="10" value="5" style="flex: 1" oninput="document.getElementById('topKVal').innerText=this.value" />
+                            <span id="topKVal" style="font-weight: 600; width: 20px; text-align: center;">5</span>
+                        </div>
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-primary" onclick="findMeetingPoints()">
+                            <span>🔍 开始计算</span>
+                        </button>
+                        <button class="btn btn-secondary" onclick="clearAll()" style="flex: 0 0 80px;">
+                            <span>🗑️</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 结果展示 -->
+                <div class="section" style="border: none; background: transparent; padding: 0;">
+                    <div class="section-title">推荐方案</div>
+                    <div id="candidateList" class="candidate-list">
+                        <div style="text-align: center; color: #86868b; padding: 40px 0;">
+                            <div style="font-size: 40px; margin-bottom: 10px; opacity: 0.3;">📍</div>
+                            <div>添加人员并设置参数后<br>点击开始计算</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let map = null;
+        let mapLoaded = false;
+        let activePersonId = null; // 当前正在选点的人员ID
+        let personMarkers = {}; // 用ID作为key存储marker
+        let candidateMarkers = [];
+        let routePlanners = [];
+        let personCounter = 0; // 用于生成唯一ID
+        let geocoder = null;
+
+        // 关键词管理
+        let selectedKeywords = ["咖啡厅", "商场", "地铁站"];
+        const commonKeywordsList = ["餐厅", "公园", "KTV", "电影院", "奶茶店", "酒店", "停车场", "超市", "医院", "银行"];
+
+        function renderKeywords() {
+            const container = document.getElementById("selectedKeywords");
+            container.innerHTML = "";
+            selectedKeywords.forEach(k => {
+                const tag = document.createElement("div");
+                tag.className = "tag";
+                tag.innerHTML = `<span>${k}</span><i onclick="removeKeyword('${k}')">×</i>`;
+                container.appendChild(tag);
+            });
+            
+            const commonContainer = document.getElementById("commonKeywords");
+            commonContainer.innerHTML = "";
+            commonKeywordsList.forEach(k => {
+                if (!selectedKeywords.includes(k)) {
+                    const tag = document.createElement("div");
+                    tag.className = "common-tag";
+                    tag.innerText = "+ " + k;
+                    tag.onclick = () => addKeyword(k);
+                    commonContainer.appendChild(tag);
+                }
+            });
+
+            // 更新隐藏的 input 值，供 API 调用使用
+            document.getElementById("query").value = selectedKeywords.join("$");
+        }
+
+        function addKeyword(k) {
+            k = k.trim();
+            if (k && !selectedKeywords.includes(k)) {
+                selectedKeywords.push(k);
+                renderKeywords();
+            }
+        }
+
+        function removeKeyword(k) {
+            selectedKeywords = selectedKeywords.filter(w => w !== k);
+            renderKeywords();
+        }
+
+        function addCustomKeyword() {
+            const input = document.getElementById("customKeyword");
+            const val = input.value.trim();
+            if (val) {
+                addKeyword(val);
+                input.value = "";
+            }
+        }
+
+        // 格式化时间
+        function formatSeconds(seconds) {
+            if (seconds === null || seconds === undefined) return "-";
+            const minutes = Math.round(seconds / 60);
+            if (minutes < 60) return `${minutes} 分钟`;
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return `${h} 小时 ${m} 分钟`;
+        }
+
+        function loadMap() {
+            const ak = document.getElementById("jsAk").value.trim();
+            if (!ak) { alert("请填写浏览器端 AK"); return; }
+            if (mapLoaded) return;
+            
+            const statusEl = document.getElementById("mapStatus");
+            statusEl.innerText = "● 加载中...";
+            
+            window.bMapCallback = function() {
+                if (typeof BMap === "undefined") {
+                    statusEl.innerText = "● 加载失败";
+                    statusEl.className = "status status-warning";
+                    alert("BMap 加载失败，请检查 AK 白名单设置");
+                    return;
+                }
+                initMap();
+                mapLoaded = true;
+                statusEl.innerText = "● 已连接";
+                statusEl.className = "status status-success";
+            };
+            
+            const script = document.createElement("script");
+            script.src = `https://api.map.baidu.com/api?v=3.0&ak=${ak}&callback=bMapCallback`;
+            document.head.appendChild(script);
+        }
+
+        function initMap() {
+            map = new BMap.Map("container", {enableMapClick: false}); // 禁用底图点击详情
+            const center = new BMap.Point(116.404, 39.915);
+            map.centerAndZoom(center, 12);
+            map.enableScrollWheelZoom(true);
+            map.addControl(new BMap.ScaleControl());
+            map.addControl(new BMap.NavigationControl());
+            
+            geocoder = new BMap.Geocoder();
+
+            // 全局地图点击事件 - 选点模式
+            map.addEventListener("click", (e) => {
+                if (activePersonId !== null) {
+                    resolveLocation(e.point, activePersonId);
+                    endPicking();
+                }
+            });
+        }
+
+        // 添加人员行
+        function addPersonRow() {
+            // 计算最小可用ID
+            const existingIds = new Set(
+                Array.from(document.querySelectorAll('.person-item'))
+                .map(el => parseInt(el.id.split('-')[1]))
+            );
+            let id = 1;
+            while (existingIds.has(id)) id++;
+
+            const container = document.getElementById("peopleList");
+            
+            const div = document.createElement("div");
+            div.className = "person-item";
+            div.id = `person-${id}`;
+            div.innerHTML = `
+                <div class="person-header">
+                    <div style="background: #007aff; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px;">P${id}</div>
+                    <input type="text" class="person-name-input" value="成员 ${id}" placeholder="姓名">
+                    <select class="mode-select" id="mode-${id}">
+                        <option value="driving">🚗 驾车</option>
+                        <option value="transit">🚌 公交</option>
+                        <option value="subway">🚇 地铁</option>
+                        <option value="walking">🚶 步行</option>
+                        <option value="riding">🚴 骑行</option>
+                    </select>
+                </div>
+                
+                <div class="search-row">
+                    <input type="text" id="addr-input-${id}" class="search-input" placeholder="输入地点搜索 (如: xx小区)" onkeydown="if(event.keyCode==13) searchKeyword(${id})">
+                    <button class="btn btn-secondary btn-icon-only" onclick="searchKeyword(${id})" title="搜索">🔍</button>
+                </div>
+
+                <div class="person-coords">
+                    <span>经度: <span class="person-coord-val" id="lng-${id}">116.404</span></span>
+                    <span>纬度: <span class="person-coord-val" id="lat-${id}">39.915</span></span>
+                </div>
+                
+                <div class="person-actions">
+                    <button class="btn btn-secondary btn-pick" onclick="startPicking(${id})">📍 地图选点</button>
+                    <button class="btn btn-danger btn-icon-only" onclick="removePerson(${id})" title="删除">✕</button>
+                </div>
+                
+                <!-- 隐藏存储真实值 -->
+                <input type="hidden" class="lat-val" id="val-lat-${id}" value="39.915">
+                <input type="hidden" class="lng-val" id="val-lng-${id}" value="116.404">
+            `;
+            
+            container.appendChild(div);
+            
+            // 默认添加一个标记
+            if (mapLoaded) {
+                updatePersonMarker(id, 116.404, 39.915);
+                // 尝试反向解析默认坐标的地址
+                resolveLocation(new BMap.Point(116.404, 39.915), id, false);
+            }
+        }
+
+        // 删除人员
+        function removePerson(id) {
+            const el = document.getElementById(`person-${id}`);
+            if (el) el.remove();
+            
+            if (personMarkers[id]) {
+                map.removeOverlay(personMarkers[id]);
+                delete personMarkers[id];
+            }
+            
+            if (activePersonId === id) endPicking();
+        }
+
+        // 关键词搜索定位
+        function searchKeyword(id) {
+            if (!mapLoaded) { alert("请先加载地图"); return; }
+            const input = document.getElementById(`addr-input-${id}`);
+            const keyword = input.value.trim();
+            if (!keyword) return;
+
+            const local = new BMap.LocalSearch(map, {
+                onSearchComplete: (results) => {
+                    if (local.getStatus() === BMAP_STATUS_SUCCESS) {
+                        if (results.getCurrentNumPois() > 0) {
+                            const poi = results.getPoi(0); // 取第一个结果
+                            setPersonLocation(id, poi.point);
+                            // 更新输入框为标准名称
+                            input.value = poi.title + " (" + poi.address + ")";
+                            map.panTo(poi.point);
+                        } else {
+                            alert("未找到相关地点");
+                        }
+                    } else {
+                        alert("搜索失败，请尝试其他关键词");
+                    }
+                }
+            });
+            local.search(keyword);
+        }
+
+        // 通过坐标获取地址名称并更新
+        function resolveLocation(point, id, panTo = true) {
+            setPersonLocation(id, point);
+            if(panTo) map.panTo(point);
+            
+            if (geocoder) {
+                geocoder.getLocation(point, (rs) => {
+                    if (rs) {
+                        const addr = rs.surroundingPois && rs.surroundingPois.length > 0 
+                                     ? rs.surroundingPois[0].title 
+                                     : rs.address;
+                        document.getElementById(`addr-input-${id}`).value = addr;
+                    }
+                });
+            }
+        }
+
+        // 开始选点模式
+        function startPicking(id) {
+            if (!mapLoaded) { alert("请先加载地图"); return; }
+            
+            // 恢复之前的状态
+            if (activePersonId !== null) {
+                const prev = document.getElementById(`person-${activePersonId}`);
+                if (prev) prev.classList.remove("active-picking");
+            }
+            
+            activePersonId = id;
+            document.getElementById(`person-${id}`).classList.add("active-picking");
+            document.querySelector(".map-container").classList.add("picking-point");
+            document.getElementById("mapTip").innerText = "点击地图选择位置";
+            document.getElementById("mapTip").classList.add("show");
+        }
+
+        // 结束选点模式
+        function endPicking() {
+            if (activePersonId !== null) {
+                const curr = document.getElementById(`person-${activePersonId}`);
+                if (curr) curr.classList.remove("active-picking");
+                activePersonId = null;
+            }
+            document.querySelector(".map-container").classList.remove("picking-point");
+            document.getElementById("mapTip").classList.remove("show");
+        }
+
+        // 设置人员位置数据
+        function setPersonLocation(id, point) {
+            const lat = point.lat.toFixed(6);
+            const lng = point.lng.toFixed(6);
+            
+            document.getElementById(`lat-${id}`).innerText = lat;
+            document.getElementById(`lng-${id}`).innerText = lng;
+            document.getElementById(`val-lat-${id}`).value = lat;
+            document.getElementById(`val-lng-${id}`).value = lng;
+            
+            updatePersonMarker(id, point.lng, point.lat);
+        }
+
+        // 更新人员标记
+        function updatePersonMarker(id, lng, lat) {
+            if (!map) return;
+            
+            const pt = new BMap.Point(lng, lat);
+            const nameComp = document.querySelector(`#person-${id} .person-name-input`);
+            const name = nameComp ? nameComp.value : `成员 ${id}`;
+            
+            if (personMarkers[id]) {
+                personMarkers[id].setPosition(pt);
+                personMarkers[id].getLabel().setContent(name);
+            } else {
+                const marker = new BMap.Marker(pt);
+                const label = new BMap.Label(name, {offset: new BMap.Size(20, -10)});
+                label.setStyle({
+                    color: "#333",
+                    border: "1px solid #ccc",
+                    padding: "2px 5px",
+                    borderRadius: "4px",
+                    background: "rgba(255,255,255,0.9)"
+                });
+                marker.setLabel(label);
+                marker.enableDragging(); // 允许拖拽微调
+                
+                // 拖拽结束更新坐标和地址
+                marker.addEventListener("dragend", (e) => {
+                    resolveLocation(e.point, id, false);
+                });
+                
+                // 点击标记也可以触发选定（可选）
+                marker.addEventListener("click", () => {
+                   if(activePersonId === id) {
+                       // 已经是选中状态，无操作
+                   } else {
+                       // 可以切换到这个人的编辑模式，或者不做操作
+                   }
+                });
+
+                map.addOverlay(marker);
+                personMarkers[id] = marker;
+            }
+        }
+
+        // 获取所有人员数据
+        function getPersons() {
+            const items = document.querySelectorAll(".person-item");
+            const persons = [];
+            items.forEach(item => {
+                const id = item.id.split("-")[1];
+                persons.push({
+                    name: item.querySelector(".person-name-input").value,
+                    lat: parseFloat(document.getElementById(`val-lat-${id}`).value),
+                    lng: parseFloat(document.getElementById(`val-lng-${id}`).value),
+                    mode: document.getElementById(`mode-${id}`).value,
+                    depart_time: ""
+                });
+            });
+            return persons;
+        }
+
+        async function findMeetingPoints() {
+            if (!mapLoaded) { alert("请先加载地图"); return; }
+            const persons = getPersons();
+            if (persons.length === 0) { alert("请至少添加一名人员"); return; }
+
+            const list = document.getElementById("candidateList");
+            list.innerHTML = `
+                <div class="loading-mask" style="position: relative; height: 100px; background: transparent;">
+                    <div class="spinner"></div>
+                    <span style="margin-left: 10px; color: #666;">AI 正在计算最佳方案...</span>
+                </div>
+            `;
+
+            const payload = {
+                persons,
+                city: document.getElementById("city").value.trim(),
+                query: document.getElementById("query").value.trim(),
+                radius: parseInt(document.getElementById("radius").value),
+                top_k: parseInt(document.getElementById("topK").value)
+            };
+
+            try {
+                const res = await fetch("/api/meeting_points", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) throw new Error(await res.text());
+
+                const data = await res.json();
+                renderCandidates(data.candidates || []);
+            } catch (err) {
+                list.innerHTML = `<div style="color: red; padding: 20px; text-align: center;">计算出错: ${err.message}</div>`;
+            }
+        }
+
+        function renderCandidates(candidates) {
+            const list = document.getElementById("candidateList");
+            list.innerHTML = "";
+            
+            // 清除之前的覆盖物
+            candidateMarkers.forEach(m => map.removeOverlay(m));
+            candidateMarkers = [];
+            routePlanners.forEach(p => p.clearResults());
+            routePlanners = [];
+
+            if (candidates.length === 0) {
+                list.innerHTML = `<div style="text-align: center; padding: 20px; color: #999;">未找到符合条件的地点，请尝试扩大半径或更换关键词</div>`;
+                return;
+            }
+
+            candidates.forEach((c, i) => {
+                // DOM 列表
+                const div = document.createElement("div");
+                div.className = "candidate-item";
+                div.innerHTML = `
+                    <div class="candidate-title">
+                        <span>${i+1}. ${c.name}</span>
+                        <span class="candidate-score">Score: ${c.score.toFixed(1)}</span>
+                    </div>
+                    <div class="candidate-address">${c.address || "地址未知"}</div>
+                    <div class="candidate-stats">
+                        <div class="stat-item">
+                            <div class="stat-label">最长耗时</div>
+                            <div class="stat-value">${formatSeconds(c.max_time)}</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">最大时差</div>
+                            <div class="stat-value">${formatSeconds(c.gap)}</div>
+                        </div>
+                    </div>
+                `;
+                div.onclick = () => showRoute(c);
+                list.appendChild(div);
+
+                // 地图 Marker
+                const pt = new BMap.Point(c.location.lng, c.location.lat);
+                const marker = new BMap.Marker(pt);
+                const label = new BMap.Label(`${i+1}`, {offset: new BMap.Size(0, -20)});
+                label.setStyle({
+                    background: "#007aff", color: "white", border: "none", 
+                    borderRadius: "50%", padding: "2px 6px", fontSize: "12px"
+                });
+                marker.setLabel(label);
+                map.addOverlay(marker);
+                candidateMarkers.push(marker);
+            });
+            
+            // 自动缩放地图以显示所有候选点
+            if (candidateMarkers.length > 0) {
+                const view = map.getViewport(candidates.map(c => new BMap.Point(c.location.lng, c.location.lat)));
+                map.centerAndZoom(view.center, view.zoom);
+            }
+        }
+
+        function clearAll() {
+            // 清除人员
+            const list = document.getElementById("peopleList");
+            while (list.firstChild) list.removeChild(list.firstChild);
+            for (let id in personMarkers) {
+                map.removeOverlay(personMarkers[id]);
+            }
+            personMarkers = {};
+            
+            // 清除候选
+            candidateMarkers.forEach(m => map.removeOverlay(m));
+            candidateMarkers = [];
+            routePlanners.forEach(p => p.clearResults());
+            routePlanners = [];
+            
+            document.getElementById("candidateList").innerHTML = "";
+            
+            // 添加两个默认
+            addPersonRow();
+            addPersonRow();
+        }
+
+        // 路线展示
+        function showRoute(candidate) {
+            // 清除旧路线
+            routePlanners.forEach(p => p.clearResults());
+            routePlanners = [];
+            
+            const persons = getPersons();
+            const dest = new BMap.Point(candidate.location.lng, candidate.location.lat);
+            
+            persons.forEach(p => {
+                const start = new BMap.Point(p.lng, p.lat);
+                let planner;
+                const opts = { renderOptions: {map: map, autoViewport: false} };
+                
+                if (p.mode === "driving") planner = new BMap.DrivingRoute(map, opts);
+                else if (p.mode === "transit") planner = new BMap.TransitRoute(map, opts);
+                else if (p.mode === "subway") {
+                    // 尝试使用地铁优先策略，如果API不支持则回退到普通公交
+                    opts.renderOptions.policy = BMAP_TRANSIT_POLICY_RECOMMEND; 
+                    planner = new BMap.TransitRoute(map, opts);
+                }
+                else if (p.mode === "walking") planner = new BMap.WalkingRoute(map, opts);
+                else if (p.mode === "riding") planner = new BMap.RidingRoute(map, opts);
+                
+                if (planner) {
+                    planner.search(start, dest);
+                    routePlanners.push(planner);
+                }
+            });
+            
+            map.panTo(dest);
+        }
+
+        // 初始化
+        renderKeywords();
+        addPersonRow();
+        addPersonRow();
+    </script>
+</body>
+</html>

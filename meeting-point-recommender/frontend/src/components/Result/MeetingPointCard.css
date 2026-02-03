@@ -1,0 +1,145 @@
+.meeting-point-card {
+    background: white;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.meeting-point-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.meeting-point-card.selected {
+    border-color: #667eea;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+}
+
+.card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.rank {
+    font-size: 18px;
+    font-weight: bold;
+    color: #667eea;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+
+.point-info {
+    flex: 1;
+}
+
+.point-name {
+    margin: 0 0 4px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+}
+
+.point-address {
+    margin: 0;
+    font-size: 12px;
+    color: #999;
+}
+
+.card-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 12px 0;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.metric {
+    text-align: center;
+}
+
+.metric-label {
+    display: block;
+    font-size: 11px;
+    color: #999;
+    margin-bottom: 4px;
+}
+
+.metric-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+}
+
+/* 路线详情 */
+.route-details {
+    margin-top: 12px;
+    padding-top: 12px;
+}
+
+.route-details h4 {
+    margin: 0 0 12px 0;
+    font-size: 13px;
+    font-weight: 500;
+    color: #666;
+}
+
+.route-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.route-item:last-child {
+    margin-bottom: 0;
+}
+
+.route-person {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.transport-icon {
+    font-size: 14px;
+}
+
+.person-name {
+    font-size: 12px;
+    color: #333;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.route-bar-wrapper {
+    flex: 1;
+    height: 8px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.route-bar {
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.route-time {
+    width: 60px;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: #667eea;
+    font-weight: 500;
+    text-align: right;
+}
