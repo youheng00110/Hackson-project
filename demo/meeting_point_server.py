@@ -26,7 +26,12 @@ from flask import Flask, Response, jsonify, request, send_from_directory
 
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
-BAIDU_BASE = "https://api.map.baidu.com/place/v2/search"
+BAIDU_BASE = "https://api.map.baidu.com"
+PLACE_AROUND_URL = f"{BAIDU_BASE}/place/v3/around"
+DRIVING_URL = f"{BAIDU_BASE}/direction/v2/driving"
+TRANSIT_URL = f"{BAIDU_BASE}/direction/v2/transit"
+WALKING_URL = f"{BAIDU_BASE}/direction/v2/walking"
+RIDING_URL = f"{BAIDU_BASE}/direction/v2/riding"
 
 
 def _load_env() -> None:
@@ -67,13 +72,16 @@ class Person:
     depart_time: str = ""
 
 
-def _call_baidu(path: str, params: Dict[str, Any]) -> Dict[str, Any]:
-    url = f"{BAIDU_BASE}{path}"
+def _call_baidu(url: str, params: Dict[str, Any]) -> Dict[str, Any]:
     params["output"] = "json"
     params["ak"] = BAIDU_WEB_AK
+    print(f"[DEBUG] 请求 URL: {url}")
+    print(f"[DEBUG] 参数: {params}")
     response = requests.get(url, params=params, timeout=12)
     response.raise_for_status()
-    return response.json()
+    result = response.json()
+    print(f"[DEBUG] 响应: status={result.get('status')}, message={result.get('message')}")
+    return result
 
 
 def _get_centroid(points: List[Person]) -> Dict[str, float]:
@@ -92,7 +100,7 @@ def _place_search_around(center: Dict[str, float], query: str, radius: int, page
         "page_size": page_size,
         "page_num": 0,
     }
-    data = _call_baidu("/place/v3/around", params)
+    data = _call_baidu(PLACE_AROUND_URL, params)
     if data.get("status") != 0:
         return []
     return data.get("results", [])
@@ -111,7 +119,7 @@ def _route_duration_seconds(person: Person, dest_lat: float, dest_lng: float, ci
         }
         if person.depart_time:
             params["departure_time"] = person.depart_time
-        data = _call_baidu("/direction/v2/driving", params)
+        data = _call_baidu(DRIVING_URL, params)
     elif mode == "transit":
         if not city:
             return None
@@ -123,19 +131,19 @@ def _route_duration_seconds(person: Person, dest_lat: float, dest_lng: float, ci
         }
         if person.depart_time:
             params["departure_time"] = person.depart_time
-        data = _call_baidu("/direction/v2/transit", params)
+        data = _call_baidu(TRANSIT_URL, params)
     elif mode == "walking":
         params = {
             "origin": origin,
             "destination": destination,
         }
-        data = _call_baidu("/direction/v2/walking", params)
+        data = _call_baidu(WALKING_URL, params)
     elif mode == "riding":
         params = {
             "origin": origin,
             "destination": destination,
         }
-        data = _call_baidu("/direction/v2/riding", params)
+        data = _call_baidu(RIDING_URL, params)
     else:
         return None
 
