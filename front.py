@@ -436,6 +436,13 @@ HTML_TEMPLATE = """
         var overlays = [];
         var poiMarkers = [];
         
+        // HTML 转义函数，防止 XSS
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
         // POI 搜索功能
         function searchPOI() {
             var keyword = document.getElementById('poiKeyword').value.trim();
@@ -466,17 +473,17 @@ HTML_TEMPLATE = """
                             (function(p, title, addr) {
                                 marker.addEventListener("click", function() {
                                     var infoWindow = new BMap.InfoWindow(
-                                        '<div style="padding: 5px;"><strong>' + title + '</strong><br>' + 
-                                        '<span style="color: #666;">' + addr + '</span></div>'
+                                        '<div style="padding: 5px;"><strong>' + escapeHtml(title) + '</strong><br>' + 
+                                        '<span style="color: #666;">' + escapeHtml(addr) + '</span></div>'
                                     );
                                     map.openInfoWindow(infoWindow, p);
                                 });
                             })(poi.point, poi.title, poi.address);
                             
                             // 在结果面板中显示
-                            resultHtml += '<div class="poi-item" onclick="jumpToPOI(' + poi.point.lng + ',' + poi.point.lat + ',\'' + poi.title.replace(/'/g, "\\'") + '\')">' +
-                                '<div class="poi-title">' + (i + 1) + '. ' + poi.title + '</div>' +
-                                '<div class="poi-address">' + poi.address + '</div>' +
+                            resultHtml += '<div class="poi-item" onclick="jumpToPOI(' + poi.point.lng + ',' + poi.point.lat + ',\'' + escapeHtml(poi.title).replace(/'/g, "\\'") + '\')">' +
+                                '<div class="poi-title">' + (i + 1) + '. ' + escapeHtml(poi.title) + '</div>' +
+                                '<div class="poi-address">' + escapeHtml(poi.address) + '</div>' +
                                 '</div>';
                         }
                         
