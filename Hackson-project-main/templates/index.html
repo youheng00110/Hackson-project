@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MeetPoint - 智能会面点推荐</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script type="text/javascript" src="https://api.map.baidu.com/api?v=3.0&ak={{ browser_ak }}"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 左侧控制面板 -->
+        <div class="control-panel">
+            <!-- 标题区域 -->
+            <div class="header">
+                <h1>MeetPoint</h1>
+                <p class="subtitle">智能多人会面点推荐系统</p>
+            </div>
+            
+            <!-- 人员管理区 -->
+            <div class="section">
+                <div class="section-header">
+                    <h2>参与人员</h2>
+                    <button class="btn btn-primary btn-sm" onclick="addPerson()">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        添加
+                    </button>
+                </div>
+                <div id="persons-list">
+                    <!-- 人员卡片将动态添加到这里 -->
+                </div>
+            </div>
+            
+            <!-- POI类型选择 -->
+            <div class="section">
+                <h2>会面场所</h2>
+                <div class="poi-types">
+                    {% for key, value in poi_types.items() %}
+                    <label class="poi-type-option">
+                        <input type="checkbox" name="poi_type" value="{{ key }}" {% if loop.first %}checked{% endif %}>
+                        <span>{{ key }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+                
+                <!-- 希望见面城市选择 -->
+                <div class="form-group" style="margin-top: var(--spacing-md);">
+                    <label>你希望见面地点在哪个城市</label>
+                    <select id="meeting-city-select">
+                        <option value="">不限制城市（推荐附近）</option>
+                        <optgroup label="直辖市">
+                            <option value="北京市">北京市</option>
+                            <option value="上海市">上海市</option>
+                            <option value="天津市">天津市</option>
+                            <option value="重庆市">重庆市</option>
+                        </optgroup>
+                        <optgroup label="省会城市">
+                            <option value="石家庄市">石家庄市</option>
+                            <option value="太原市">太原市</option>
+                            <option value="呼和浩特市">呼和浩特市</option>
+                            <option value="沈阳市">沈阳市</option>
+                            <option value="长春市">长春市</option>
+                            <option value="哈尔滨市">哈尔滨市</option>
+                            <option value="南京市">南京市</option>
+                            <option value="杭州市">杭州市</option>
+                            <option value="合肥市">合肥市</option>
+                            <option value="福州市">福州市</option>
+                            <option value="南昌市">南昌市</option>
+                            <option value="济南市">济南市</option>
+                            <option value="郑州市">郑州市</option>
+                            <option value="武汉市">武汉市</option>
+                            <option value="长沙市">长沙市</option>
+                            <option value="广州市">广州市</option>
+                            <option value="南宁市">南宁市</option>
+                            <option value="海口市">海口市</option>
+                            <option value="成都市">成都市</option>
+                            <option value="贵阳市">贵阳市</option>
+                            <option value="昆明市">昆明市</option>
+                            <option value="拉萨市">拉萨市</option>
+                            <option value="西安市">西安市</option>
+                            <option value="兰州市">兰州市</option>
+                            <option value="西宁市">西宁市</option>
+                            <option value="银川市">银川市</option>
+                            <option value="乌鲁木齐市">乌鲁木齐市</option>
+                        </optgroup>
+                        <optgroup label="计划单列市">
+                            <option value="深圳市">深圳市</option>
+                            <option value="大连市">大连市</option>
+                            <option value="宁波市">宁波市</option>
+                            <option value="厦门市">厦门市</option>
+                            <option value="青岛市">青岛市</option>
+                        </optgroup>
+                        <optgroup label="重要城市">
+                            <option value="苏州市">苏州市</option>
+                            <option value="无锡市">无锡市</option>
+                            <option value="佛山市">佛山市</option>
+                            <option value="东莞市">东莞市</option>
+                            <option value="温州市">温州市</option>
+                            <option value="泉州市">泉州市</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <!-- 搜索半径选择 -->
+                <div class="form-group" style="margin-top: var(--spacing-md);">
+                    <label>搜索半径（米）</label>
+                    <input type="range" id="search-radius-slider" min="1000" max="20000" step="1000" value="5000">
+                    <div class="slider-value">
+                        <span id="radius-value">5000 米</span>
+                        <input type="number" id="search-radius-input" min="1000" max="20000" step="1000" value="5000" 
+                               oninput="updateRadiusSlider(this.value)" onchange="updateRadiusSlider(this.value)">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 计算按钮 -->
+            <div class="section">
+                <button class="btn btn-success btn-large" onclick="calculateMeetingPoints()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                    </svg>
+                    查找最佳会面点
+                </button>
+            </div>
+            
+            <!-- 清空按钮 -->
+            <div class="section">
+                <button class="btn btn-danger btn-large" onclick="clearAllData()">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                    一键清空
+                </button>
+            </div>
+            
+            <!-- 结果显示区 -->
+            <div class="section" id="results-section" style="display: none;">
+                <h2>推荐结果</h2>
+                <div id="results-list">
+                    <!-- 结果卡片将动态添加到这里 -->
+                </div>
+            </div>
+            
+            <!-- 提示信息 -->
+            <div class="tips">
+                <div class="tips-header">使用指南</div>
+                <ol>
+                    <li>添加 2-10 位参与人员</li>
+                    <li>输入地址或在地图上点选位置</li>
+                    <li>为每人选择出行方式</li>
+                    <li>选择期望的会面场所类型</li>
+                    <li>点击按钮获取智能推荐</li>
+                </ol>
+            </div>
+        </div>
+        
+        <!-- 右侧地图区域 -->
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-legend">
+                <div class="legend-title">图例说明</div>
+                <div class="legend-item">
+                    <span class="legend-icon person-icon"></span>
+                    <span>参与人员位置</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-icon meeting-icon"></span>
+                    <span>推荐会面点</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-icon center-icon"></span>
+                    <span>几何中心点</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 加载遮罩 -->
+    <div id="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p id="loading-text">正在智能分析中...</p>
+        </div>
+    </div>
+    
+    <!-- 人员卡片模板 -->
+    <template id="person-card-template">
+        <div class="person-card fade-in" data-person-id="">
+            <div class="person-header">
+                <span class="person-number"></span>
+                <button class="btn btn-danger btn-xs" onclick="removePerson(this)">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    移除
+                </button>
+            </div>
+            <div class="form-group">
+                <label>姓名</label>
+                <input type="text" class="person-name" placeholder="请输入姓名">
+            </div>
+            <div class="form-group">
+                <label>当前位置</label>
+                <div class="location-selector">
+                    <div class="location-mode-toggle">
+                        <button class="btn btn-secondary btn-xs location-mode-btn active" data-mode="auto" onclick="switchLocationMode(this, 'auto')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            自动定位
+                        </button>
+                        <button class="btn btn-secondary btn-xs location-mode-btn" data-mode="manual" onclick="switchLocationMode(this, 'manual')">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2l7 19-7-4-7 4 7-19z"></path>
+                            </svg>
+                            手动输入
+                        </button>
+                    </div>
+                    
+                    <div class="location-auto-mode">
+                        <div class="auto-location-info">
+                            <span class="auto-location-text">点击下方按钮获取当前位置</span>
+                            <input type="hidden" class="person-lat">
+                            <input type="hidden" class="person-lng">
+                        </div>
+                        <button class="btn btn-secondary btn-xs" onclick="getCurrentLocation(this)">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            获取当前位置
+                        </button>
+                    </div>
+                    
+                    <div class="location-manual-mode" style="display: none;">
+                        <div class="location-dropdowns">
+                            <select class="province-select" onchange="updateCitySelect(this)">
+                                <option value="">选择省份</option>
+                            </select>
+                            <select class="city-select" onchange="updateLocationFromCity(this)">
+                                <option value="">选择城市</option>
+                            </select>
+                        </div>
+                        <div class="manual-input-wrapper">
+                            <input type="text" class="person-address" placeholder="输入详细地址或地标" autocomplete="off">
+                            <div class="suggestions-dropdown" style="display: none;">
+                                <!-- 搜索建议将动态插入这里 -->
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-xs map-select-btn" onclick="pickLocationFromMap(this)">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                            地图选点
+                        </button>
+                        <input type="hidden" class="person-lat">
+                        <input type="hidden" class="person-lng">
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>出行方式</label>
+                <select class="person-travel-mode">
+                    <option value="driving">🚗 驾车</option>
+                    <option value="transit">🚌 公交</option>
+                    <option value="walking">🚶 步行</option>
+                    <option value="riding">🚲 骑行</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>出发时间</label>
+                <input type="time" class="person-departure-time" placeholder="HH:MM">
+            </div>
+            <div class="location-status"></div>
+        </div>
+    </template>
+    
+    <!-- 结果卡片模板 -->
+    <template id="result-card-template">
+        <div class="result-card slide-in" data-point-index="">
+            <div class="result-rank"></div>
+            <div class="result-info">
+                <h3 class="result-name"></h3>
+                <p class="result-address"></p>
+                <div class="result-metrics">
+                    <span class="metric">
+                        <span class="metric-label">最长到达</span>
+                        <span class="metric-value max-duration"></span>
+                    </span>
+                    <span class="metric">
+                        <span class="metric-label">平均到达</span>
+                        <span class="metric-value avg-duration"></span>
+                    </span>
+                </div>
+            </div>
+            <button class="btn btn-secondary btn-sm view-routes-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                查看路线详情
+            </button>
+            <div class="routes-detail" style="display: none;">
+                <!-- 每人路线详情将动态添加 -->
+            </div>
+        </div>
+    </template>
+    
+    <script src="{{ url_for('static', filename='js/map_handler.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
