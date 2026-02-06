@@ -1,0 +1,215 @@
+.person-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.person-list.empty {
+    padding: 20px;
+    text-align: center;
+    color: #999;
+    background: #f5f5f5;
+    border-radius: 8px;
+}
+
+.person-list.empty p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.person-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+.person-item:hover {
+    background: #f0f0f0;
+}
+
+.person-item.editing {
+    background: #fff;
+    border: 1px solid #667eea;
+    padding: 11px;
+}
+
+.person-info {
+    flex: 1;
+    cursor: pointer;
+}
+
+.person-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.person-name {
+    font-weight: 500;
+    color: #333;
+}
+
+.person-transport {
+    font-size: 12px;
+    color: #666;
+    background: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.person-location {
+    font-size: 12px;
+    color: #999;
+}
+
+.person-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.edit-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: #1890ff;
+    color: white;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.edit-btn:hover {
+    background: #40a9ff;
+    transform: scale(1.1);
+}
+
+.remove-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: #ff4d4f;
+    color: white;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.remove-btn:hover {
+    background: #ff7875;
+    transform: scale(1.1);
+}
+
+/* 编辑表单样式 */
+.person-edit-form {
+    width: 100%;
+}
+
+.edit-row {
+    margin-bottom: 10px;
+}
+
+.edit-row:last-child {
+    margin-bottom: 0;
+}
+
+.edit-name-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.edit-name-input:focus {
+    border-color: #667eea;
+}
+
+.edit-transport-selector {
+    display: flex;
+    gap: 6px;
+}
+
+.edit-transport-btn {
+    flex: 1;
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid #d9d9d9;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.edit-transport-btn:hover {
+    border-color: #667eea;
+}
+
+.edit-transport-btn.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.location-row {
+    padding: 6px 0;
+}
+
+.edit-location {
+    font-size: 12px;
+    color: #999;
+}
+
+.edit-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.save-btn {
+    flex: 1;
+    padding: 8px 16px;
+    font-size: 13px;
+    color: white;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.save-btn:hover {
+    opacity: 0.9;
+}
+
+.cancel-btn {
+    flex: 1;
+    padding: 8px 16px;
+    font-size: 13px;
+    color: #666;
+    background: #f5f5f5;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+    background: #eee;
+    border-color: #ccc;
+}
