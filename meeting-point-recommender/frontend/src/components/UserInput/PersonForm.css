@@ -1,0 +1,258 @@
+.person-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group input {
+    padding: 10px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* 位置输入与城市前缀组合 */
+.location-with-city {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+}
+
+/* 城市前缀选择器 */
+.city-prefix {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.city-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 10px;
+    background: #f5f5f5;
+    border: 1px solid #e0e0e0;
+    border-right: none;
+    border-radius: 8px 0 0 8px;
+    font-size: 13px;
+    color: #333;
+    cursor: pointer;
+    height: 100%;
+    white-space: nowrap;
+    transition: background-color 0.2s;
+}
+
+.city-btn:hover {
+    background: #eee;
+}
+
+.city-arrow {
+    font-size: 10px;
+    color: #999;
+}
+
+.city-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 120px;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 200;
+    margin-top: 4px;
+    list-style: none;
+    padding: 0;
+}
+
+.city-dropdown li {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+.city-dropdown li:last-child {
+    border-bottom: none;
+}
+
+.city-dropdown li:hover {
+    background-color: #f5f5f5;
+}
+
+.city-dropdown li.selected {
+    background-color: #667eea;
+    color: white;
+}
+
+.city-dropdown li.refresh-btn {
+    background-color: #f8f9ff;
+    color: #667eea;
+    font-weight: 500;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.city-dropdown li.refresh-btn:hover {
+    background-color: #eef1ff;
+}
+
+/* 位置输入框 */
+.location-input-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.location-with-city .location-input-wrapper input {
+    border-radius: 0 8px 8px 0;
+    border-left: none;
+}
+
+.location-with-city .location-input-wrapper input:focus {
+    border-left: 1px solid #667eea;
+    margin-left: -1px;
+}
+
+.searching-indicator {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #999;
+}
+
+.search-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 100;
+    margin-top: 4px;
+    list-style: none;
+    padding: 0;
+}
+
+.search-results li {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s;
+}
+
+.search-results li:last-child {
+    border-bottom: none;
+}
+
+.search-results li:hover {
+    background-color: #f5f5f5;
+}
+
+.result-name {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+}
+
+.result-address {
+    font-size: 12px;
+    color: #999;
+    margin-top: 2px;
+}
+
+.coordinates-display {
+    font-size: 12px;
+    color: #667eea;
+    margin-top: 4px;
+}
+
+/* 出行方式选择器 */
+.transport-selector {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.transport-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 8px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.transport-btn:hover {
+    border-color: #667eea;
+}
+
+.transport-btn.active {
+    border-color: #667eea;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.transport-icon {
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+.transport-label {
+    font-size: 12px;
+}
+
+/* 提交按钮 */
+.submit-btn {
+    padding: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.submit-btn:hover:not(:disabled) {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.submit-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

@@ -1,0 +1,51 @@
+.ai-decision-card {
+    background: white;
+    border: 2px solid #ffe1c2;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 6px 16px rgba(255, 138, 0, 0.12);
+}
+
+.ai-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.ai-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #d46b08;
+}
+
+.ai-card-content {
+    font-size: 13px;
+    line-height: 1.7;
+    color: #333;
+}
+
+.ai-line-title {
+    margin: 10px 0 6px 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: #a85a00;
+}
+
+.ai-line-strong {
+    margin: 6px 0 2px 0;
+    color: #5c3b00;
+}
+
+.ai-line-bullet {
+    margin-left: 2px;
+    color: #333;
+}
+
+.ai-line-text {
+    margin: 4px 0;
+}
+
+.ai-line-spacer {
+    height: 6px;
+}
