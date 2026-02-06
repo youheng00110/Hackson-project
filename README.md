@@ -12,27 +12,54 @@
 - 支持调节搜索半径
 - 提供多种计算策略（默认推荐/相对时差最小/相对距离差最小）
 - IP 定位自动获取当前城市
+![alt text](1Planning.png) ![alt text](<2ai decision.png>)
 
+## AI 模块简介
+
+AI 决策助手会在候选点生成后给出更贴近日常沟通的推荐说明，结合路况、天气适配性与口碑因素输出建议，帮助快速定案。
+
+**能力要点**
+- 结合候选点通行时间与拥堵程度，优先推荐通行更顺畅的位置
+- 结合天气与场景匹配度，提示室内商圈、近地铁或停车便利等优势
+- 兼顾口碑与品牌稳定性，让推荐更可靠、可执行
+
+**输出形式**
+- 在前端以卡片形式展示
+- 使用自然、专业的文字表达，便于直接沟通
 ## 项目结构
 
 ```
-meeting-point-recommender/
-├── backend/                 # 后端服务
-│   ├── src/
-│   │   ├── app.js          # Express 应用入口
-│   │   ├── config/         # 配置文件
-│   │   ├── controllers/    # 控制器
-│   │   ├── routes/         # 路由
-│   │   ├── services/       # 业务逻辑
-│   │   └── utils/          # 工具函数
-│   └── package.json
-├── frontend/                # 前端应用
-│   ├── src/
-│   │   ├── components/     # React 组件
-│   │   ├── services/       # API 服务
-│   │   ├── App.jsx         # 主应用组件
-│   │   └── main.jsx        # 入口文件
-│   └── package.json
+.
+├── 1Planning.png
+├── 2ai decision.png
+├── meeting-point-recommender/
+│   ├── backend/                 # 后端服务
+│   │   ├── src/
+│   │   │   ├── app.js           # Express 应用入口
+│   │   │   ├── config/          # 配置文件
+│   │   │   ├── controllers/     # 控制器
+│   │   │   ├── routes/          # 路由
+│   │   │   ├── services/        # 业务逻辑
+│   │   │   └── utils/           # 工具函数
+│   │   └── package.json
+│   ├── frontend/                # 前端应用
+│   │   ├── src/
+│   │   │   ├── components/      # React 组件
+│   │   │   ├── services/        # API 服务
+│   │   │   ├── App.jsx          # 主应用组件
+│   │   │   └── main.jsx         # 入口文件
+│   │   └── package.json
+│   ├── 1Planning.png
+│   ├── 2ai decision.png
+│   ├── 3 city map.png
+│   ├── 4default-user.png
+│   ├── screenshot.png
+│   ├── screenshot2.png
+│   ├── screenshot3.png
+│   ├── screenshot4.png
+│   ├── screenshot7.png
+│   └── screenshot8.png
+├── package-lock.json
 └── README.md
 ```
 
@@ -105,6 +132,7 @@ npm run dev
 4. 点击"寻找会面点"按钮
 5. 系统自动计算并推荐最优会面点
 6. 在地图上查看各人路线和会面点位置
+7. 点击"AI 自动决策"获取推荐说明卡片
 
 ## API 密钥申请
 
