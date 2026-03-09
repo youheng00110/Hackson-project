@@ -1,0 +1,90 @@
+/**
+ * 主布局容器样式文件
+ * 设计风格：经典左右布局、响应式适配、淡入动画
+ */
+
+/* ========== 主布局容器 ========== */
+.main-layout {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background-color: #f5f7fa;
+}
+
+/* ========== 右侧内容区包装器 ========== */
+.content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ========== 内容容器 ========== */
+.content-container {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 滚动条样式 */
+.content-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.content-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.content-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+.content-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* ========== 页面内容区域 ========== */
+.page-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ========== 淡入动画 ========== */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========== 响应式适配 ========== */
+@media (max-width: 768px) {
+  .content-container {
+    padding: 16px;
+  }
+  
+  /* 移动端侧边栏固定定位时的内容区 */
+  .main-layout {
+    position: relative;
+  }
+}
+
+/* ========== 全局滚动优化 ========== */
+* {
+  -webkit-overflow-scrolling: touch;
+}

@@ -1,0 +1,126 @@
+/**
+ * 开发中页面样式文件
+ * 设计风格：简洁友好、居中布局、现代感
+ */
+
+/* ========== 页面容器 ========== */
+.developing-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 48px);
+  padding: 24px;
+}
+
+/* ========== 内容容器 ========== */
+.developing-content {
+  text-align: center;
+  max-width: 500px;
+  padding: 48px 32px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* ========== 图标区域 ========== */
+.icon-container {
+  margin-bottom: 32px;
+}
+
+.main-icon {
+  font-size: 96px;
+  color: #f39c12;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* ========== 标题区域 ========== */
+.developing-title {
+  margin: 0 0 16px 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #2c3e50;
+  letter-spacing: 2px;
+}
+
+/* ========== 副标题 ========== */
+.developing-subtitle {
+  margin: 0 0 40px 0;
+  font-size: 16px;
+  color: #7f8c8d;
+  line-height: 1.6;
+}
+
+/* ========== 返回按钮 ========== */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #ffffff;
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.back-btn:hover {
+  background: linear-gradient(135deg, #2980b9 0%, #1c6ea4 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(52, 152, 219, 0.3);
+}
+
+.back-btn:active {
+  transform: translateY(0);
+}
+
+.back-icon {
+  font-size: 16px;
+  transition: transform 0.2s ease;
+}
+
+.back-btn:hover .back-icon {
+  transform: translateX(-4px);
+}
+
+/* ========== 响应式适配 ========== */
+@media (max-width: 768px) {
+  .developing-page {
+    padding: 16px;
+  }
+  
+  .developing-content {
+    padding: 32px 20px;
+  }
+  
+  .main-icon {
+    font-size: 72px;
+  }
+  
+  .developing-title {
+    font-size: 24px;
+  }
+  
+  .developing-subtitle {
+    font-size: 14px;
+  }
+  
+  .back-btn {
+    padding: 12px 24px;
+    font-size: 14px;
+  }
+}
