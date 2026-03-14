@@ -82,9 +82,9 @@
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.05);  /* 浅灰色背景 */
-  border: none;
-  color: #2c3e50;  /* 深灰色图标 */
+  background: rgba(255, 255, 255, 0.15);  /* 白色半透明背景 */
+  border: 1px solid rgba(255, 255, 255, 0.3);  /* 白色边框 */
+  color: #ffffff;  /* 白色图标 */
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -94,8 +94,9 @@
 }
 
 .toggle-btn:hover {
-  background: rgba(0, 0, 0, 0.1);  /* hover 时变深 */
+  background: rgba(255, 255, 255, 0.25);  /* hover 时更白 */
   transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);  /* 添加阴影 */
 }
 
 .toggle-btn svg {
