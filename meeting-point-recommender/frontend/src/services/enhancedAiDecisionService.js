@@ -6,6 +6,117 @@
 
 class EnhancedAiDecisionService {
   /**
+   * 文案模板库（避免同质化）
+   */
+  static getTrafficPhrases() {
+    return [
+      '交通十分便利，大家过来都很方便',
+      '地理位置优越，多条路线可达',
+      '出行非常便捷，节省路途时间',
+      '交通便利度很高，对所有人都友好',
+      '四通八达的位置，轻松到达',
+      '交通枢纽位置，换乘很方便',
+      '道路通畅，开车过来很顺畅',
+      '位置好找，路线清晰不绕路'
+    ];
+  }
+
+  static getReputationPhrases() {
+    return [
+      '口碑极佳，深受顾客好评',
+      '人气爆棚，评价一致好评',
+      '备受推崇，用户满意度超高',
+      '名声在外，回头客特别多',
+      '广受赞誉，品质有保证',
+      '好评如潮，值得信赖的选择',
+      '口碑载道，大家都说好',
+      '深受欢迎，评分遥遥领先'
+    ];
+  }
+
+  static getParkingPhrases(parkingScore) {
+    if (parkingScore > 90) {
+      return [
+        '停车非常方便，车位充足不用等',
+        '停车场很大，随时都有位置',
+        '停车零压力，自驾首选之地',
+        '车位管够，停车体验极佳'
+      ];
+    } else if (parkingScore > 80) {
+      return [
+        '停车便利，基本不用担心车位',
+        '配套停车场，停车比较方便',
+        '停车条件不错，能满足需求',
+        '有专门停车场，省心省力'
+      ];
+    } else {
+      return [
+        '周边有停车设施，可以解决停车问题',
+        '停车相对便利，基本够用',
+        '停车位尚可，建议错峰前往',
+        '有停车配套，便利性中等'
+      ];
+    }
+  }
+
+  static getWeatherPhrases(isRainy, score) {
+    if (isRainy && score > 80) {
+      return [
+        '而且是室内场所，不用担心下雨，非常适合聚会',
+        '完全不受天气影响，雨天也能愉快相聚',
+        '室内环境舒适，无惧风雨干扰',
+        '避雨好去处，聚会不受天气影响'
+      ];
+    } else if (!isRainy && score > 85) {
+      return [
+        '天气晴好，户外环境更添惬意',
+        '阳光明媚，正是出门聚会的好时机',
+        '天公作美，出行体验更佳',
+        '好天气让聚会心情更加愉悦'
+      ];
+    } else {
+      return [
+        '环境舒适，是聚餐的好选择',
+        '氛围宜人，适合放松聊天',
+        '环境雅致，聚会休闲两相宜',
+        '舒适自在，享受美好时光'
+      ];
+    }
+  }
+
+  static getFacilityPhrases(facilityScore) {
+    if (facilityScore > 85) {
+      return [
+        '配套设施一流，应有尽有',
+        '硬件设施完善，体验感极佳',
+        '周边配套齐全，便利性满分',
+        '设施完备，满足各种需求'
+      ];
+    } else if (facilityScore > 70) {
+      return [
+        '设施配套不错，基本需求都能满足',
+        '配套较为完善，使用体验良好',
+        '基础设施齐全，日常使用无压力',
+        '设施条件较好，能满足大部分需求'
+      ];
+    } else {
+      return [
+        '具备基础配套设施',
+        '设施配置中等，满足基本需求',
+        '配套一般，但胜在实用',
+        '设施简单，但功能齐全'
+      ];
+    }
+  }
+
+  /**
+   * 随机选择文案（增加多样性）
+   */
+  static getRandomPhrase(phrases) {
+    const index = Math.floor(Math.random() * phrases.length);
+    return phrases[index];
+  }
+  /**
    * 生成智能推荐说明
    * @param {Array} candidates - 候选点数组
    * @param {Array} persons - 参与人员数组
@@ -307,7 +418,7 @@ class EnhancedAiDecisionService {
   }
 
   /**
-   * 生成餐饮类推荐文案
+   * 生成餐饮类推荐文案（个性化版本）
    */
   static generateDiningRecommendation(candidate, scores, weather) {
     let text = `🍽️ 推荐这里聚餐！\n\n`;
@@ -315,45 +426,96 @@ class EnhancedAiDecisionService {
     const parkingScore = scores.find(s => s.name === '停车便利').score;
     const trafficScore = scores.find(s => s.name === '交通便利').score;
     const reputationScore = scores.find(s => s.name === '口碑评价').score;
+    const facilityScore = scores.find(s => s.name === '设施配套').score;
     
-    // 根据最强优势调整表达顺序
+    // 根据评分高低决定强调顺序和用词
+    const highlights = [];
+    
     if (parkingScore > 80) {
-      text += `这家${candidate.name}停车非常方便，`;  // 优先强调停车
+      highlights.push({ type: 'parking', score: parkingScore });
     }
-    
     if (reputationScore > 85) {
-      text += '口碑极佳，深受顾客好评，';
+      highlights.push({ type: 'reputation', score: reputationScore });
     }
-    
     if (trafficScore > 80) {
-      text += '交通十分便利，大家过来都很方便，';
+      highlights.push({ type: 'traffic', score: trafficScore });
+    }
+    if (facilityScore > 75) {
+      highlights.push({ type: 'facility', score: facilityScore });
     }
     
-    if (weather.isRainy) {
-      text += '而且是室内场所，不用担心下雨，非常适合聚会。';
-    } else {
-      text += '环境舒适，是聚餐的好选择。';
-    }
+    // 按分数排序，优先强调最强优势
+    highlights.sort((a, b) => b.score - a.score);
+    
+    // 构建个性化文案
+    highlights.forEach((highlight, index) => {
+      if (index > 0) text += '，';
+      
+      switch(highlight.type) {
+        case 'parking':
+          text += this.getRandomPhrase(this.getParkingPhrases(parkingScore));
+          break;
+        case 'reputation':
+          text += this.getRandomPhrase(this.getReputationPhrases());
+          break;
+        case 'traffic':
+          text += this.getRandomPhrase(this.getTrafficPhrases());
+          break;
+        case 'facility':
+          text += this.getRandomPhrase(this.getFacilityPhrases(facilityScore));
+          break;
+      }
+    });
+    
+    // 添加天气相关描述
+    const weatherScore = scores.find(s => s.name === '天气适配').score;
+    text += this.getRandomPhrase(this.getWeatherPhrases(weather.isRainy, weatherScore));
     
     return text;
   }
 
   /**
-   * 生成购物类推荐文案
+   * 生成购物类推荐文案（个性化版本）
    */
   static generateShoppingRecommendation(candidate, scores, weather) {
     let text = `🛍️ 推荐这个商圈！\n\n`;
     
     const parkingScore = scores.find(s => s.name === '停车便利').score;
     const facilityScore = scores.find(s => s.name === '设施配套').score;
+    const trafficScore = scores.find(s => s.name === '交通便利').score;
     
+    // 构建亮点列表
+    const highlights = [];
     if (parkingScore > 70) {
-      text += '这里停车位非常充足，开车过来完全不用担心停车问题，'; // 优先强调停车
+      highlights.push({ type: 'parking', score: parkingScore });
+    }
+    if (facilityScore > 80) {
+      highlights.push({ type: 'facility', score: facilityScore });
+    }
+    if (trafficScore > 75) {
+      highlights.push({ type: 'traffic', score: trafficScore });
     }
     
-    if (facilityScore > 80) {
-      text += '商铺齐全，吃喝玩乐购一站式搞定，';
-    }
+    // 按分数排序
+    highlights.sort((a, b) => b.score - a.score);
+    
+    // 生成个性化文案
+    highlights.forEach((highlight, index) => {
+      if (index > 0) text += '，';
+      
+      switch(highlight.type) {
+        case 'parking':
+          text += this.getRandomPhrase(this.getParkingPhrases(parkingScore));
+          break;
+        case 'facility':
+          text += this.getRandomPhrase(this.getFacilityPhrases(facilityScore));
+          text += '吃喝玩乐购一站式搞定';
+          break;
+        case 'traffic':
+          text += this.getRandomPhrase(this.getTrafficPhrases());
+          break;
+      }
+    });
     
     text += '非常适合大家会面，既能逛街又能聊天，环境舒适又方便。';
     
@@ -361,34 +523,67 @@ class EnhancedAiDecisionService {
   }
 
   /**
-   * 生成户外类推荐文案
+   * 生成户外类推荐文案（个性化版本）
    */
   static generateOutdoorRecommendation(candidate, scores, weather) {
     let text = `🌳 推荐户外会面！\n\n`;
       
     const trafficScore = scores.find(s => s.name === '交通便利').score;
     const reputationScore = scores.find(s => s.name === '口碑评价').score;
+    const facilityScore = scores.find(s => s.name === '设施配套').score;
       
-    if (!weather.isRainy && weather.temperature > 15 && weather.temperature < 30) {
-      text += '今天天气不错，温度适宜，';
-      if (trafficScore > 80) {
-        text += '而且交通便利，大家过来都方便，';
-      }
-      text += '在这里会面既舒适又经济，还能呼吸新鲜空气。';
+    // 天气判断
+    const isGoodWeather = !weather.isRainy && weather.temperature > 15 && weather.temperature < 30;
+      
+    if (isGoodWeather) {
+      // 好天气的多种表达方式
+      const weatherPhrases = [
+        '今天天气不错，温度适宜',
+        '天朗气清，温度刚刚好',
+        '阳光明媚，气候宜人',
+        '晴空万里，体感舒适'
+      ];
+      text += this.getRandomPhrase(weatherPhrases);
+        
+      // 构建亮点
+      const highlights = [];
+      if (trafficScore > 80) highlights.push({ type: 'traffic', score: trafficScore });
+      if (reputationScore > 75) highlights.push({ type: 'reputation', score: reputationScore });
+        
+      highlights.sort((a, b) => b.score - a.score);
+        
+      highlights.forEach(highlight => {
+        text += '，';
+        if (highlight.type === 'traffic') {
+          text += this.getRandomPhrase(this.getTrafficPhrases());
+        } else if (highlight.type === 'reputation') {
+          text += this.getRandomPhrase(this.getReputationPhrases());
+        }
+      });
+        
+      text += '，在这里会面既舒适又经济，还能呼吸新鲜空气。';
     } else {
-      text += '虽然天气一般，但这里环境优美，空气清新，';
+      // 一般天气的表达
+      const badWeatherPhrases = [
+        '虽然天气一般，但这里环境优美，空气清新',
+        '天气虽不尽如人意，但景色弥补了不足',
+        '即便天气普通，环境却让人眼前一亮',
+        '天气略有遗憾，不过氛围依然很好'
+      ];
+      text += this.getRandomPhrase(badWeatherPhrases);
+        
       if (reputationScore > 80) {
-        text += '而且人气很高，是个值得一试的休闲好去处。';
-      } else {
-        text += '适合放松聊天，享受悠闲时光。';
+        text += '，而且' + this.getRandomPhrase(this.getReputationPhrases());
       }
+        
+      text += '，适合放松聊天，享受悠闲时光。';
     }
       
     return text;
   }
 
   /**
-   * 生成通用推荐文案
+   * 生成通用推荐文案（个性化版本）
    */
   static generateGeneralRecommendation(candidate, scores, weather) {
     let text = `📍 推荐这个地点！\n\n`;
@@ -396,13 +591,54 @@ class EnhancedAiDecisionService {
     const bestScore = Math.max(...scores.map(s => s.score));
     const bestFactor = scores.find(s => s.score === bestScore);
     
-    text += `综合各方面因素，这里在${bestFactor.name}方面表现突出，`; 
+    // 突出优势的多种表达方式
+    const advantagePhrases = {
+      '交通便利': [
+        '这里在交通便利性方面表现突出',
+        '交通可达性是最大亮点',
+        '出行便利性远超其他地点',
+        '地理位置优势明显'
+      ],
+      '天气适配': [
+        '与今天天气的匹配度非常高',
+        '特别适合今天的天气条件',
+        '天气适应性是首选理由',
+        '气候适配度表现优异'
+      ],
+      '设施配套': [
+        '配套设施完善是主要优势',
+        '硬件条件令人满意',
+        '周边设施齐全度高',
+        '便利设施一应俱全'
+      ],
+      '口碑评价': [
+        '用户评价是最突出的优势',
+        '人气和口碑双丰收',
+        '大众认可度极高',
+        '好评率遥遥领先'
+      ],
+      '停车便利': [
+        '停车便利性是最大卖点',
+        '自驾友好度满分',
+        '停车条件优于大多数地点',
+        '车位充足是亮点'
+      ]
+    };
+    
+    const phrases = advantagePhrases[bestFactor.name] || ['综合表现优秀'];
+    text += this.getRandomPhrase(phrases);
     
     if (weather.condition.includes('晴') || weather.condition.includes('多云')) {
-      text += '加上今天天气很好，';
+      const goodWeatherPhrases = [
+        '，加上今天天气很好',
+        '，配合晴朗的天气',
+        '，天公作美',
+        '，好天气锦上添花'
+      ];
+      text += this.getRandomPhrase(goodWeatherPhrases);
     }
     
-    text += '是非常不错的会面选择，相信会给大家带来愉快的体验。';
+    text += '，是非常不错的会面选择，相信会给大家带来愉快的体验。';
     
     return text;
   }

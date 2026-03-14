@@ -380,8 +380,15 @@ function SingleTerminalPage() {
       // 转换为 API 参数
       const apiParams = AiParserService.convertToApiParams(parsedParams);
       
-      // 执行搜索
-      const result = await findMeetingPoint(persons, apiParams);
+      // 重要：保留每个人自己设置的交通方式（优先级高于 AI 解析）
+      // 只有当某个人没有设置交通方式时，才使用 AI 解析的默认值
+      const personsWithTransport = persons.map(person => ({
+        ...person,
+        transportMode: person.transportMode || parsedParams.transportMode || 'driving'
+      }));
+      
+      // 执行搜索（使用更新后的交通方式）
+      const result = await findMeetingPoint(personsWithTransport, apiParams);
 
       if (result.success && result.data.meetingPoints.length > 0) {
         // 使用增强 AI 决策服务生成推荐说明和排序

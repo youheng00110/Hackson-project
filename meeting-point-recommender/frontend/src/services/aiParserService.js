@@ -31,10 +31,18 @@ const STRATEGY_KEYWORDS = {
 
 // 距离关键词映射（米）
 const DISTANCE_KEYWORDS = {
-  1000: ['1公里', '1千米', '附近', '旁边', '近距离'],
-  2000: ['2公里', '2千米', '不远', '较近'],
-  3000: ['3公里', '3千米', '适中', '中等距离'],
-  5000: ['5公里', '5千米', '稍远', '远一点']
+  1000: ['1 公里', '1 千米', '附近', '旁边', '近距离'],
+  2000: ['2 公里', '2 千米', '不远', '较近'],
+  3000: ['3 公里', '3 千米', '适中', '中等距离'],
+  5000: ['5 公里', '5 千米', '稍远', '远一点']
+};
+
+// 交通方式关键词映射
+const TRANSPORT_MODE_KEYWORDS = {
+  'driving': ['开车', '驾车', '自驾', '打车', '汽车', '车'],
+  'transit': ['地铁', '公交', '公共交通', '轨道交通', '电车'],
+  'walking': ['步行', '走路', '走', '脚'],
+  'bicycling': ['骑车', '自行车', '骑行', '单车', '电动车']
 };
 
 /**
@@ -44,7 +52,7 @@ class AiParserService {
   /**
    * 解析用户输入的自然语言需求
    * @param {string} userInput - 用户输入的自然语言
-   * @returns {Object} 解析结果 { types, radius, strategy, summary }
+   * @returns {Object} 解析结果 { types, radius, strategy, transportMode, summary }
    */
   static parseUserInput(userInput) {
     // 转换为小写便于匹配
@@ -59,13 +67,17 @@ class AiParserService {
     // 提取计算策略
     const strategy = this.extractStrategy(input);
     
+    // 提取交通方式
+    const transportMode = this.extractTransportMode(input);
+    
     // 生成摘要
-    const summary = this.generateSummary(types, radius, strategy);
+    const summary = this.generateSummary(types, radius, strategy, transportMode);
     
     return {
       types,
       radius,
       strategy,
+      transportMode,
       summary,
       originalInput: userInput
     };
@@ -149,13 +161,31 @@ class AiParserService {
   }
 
   /**
+   * 提取交通方式
+   * @param {string} input - 用户输入
+   * @returns {string} 交通方式
+   */
+  static extractTransportMode(input) {
+    // 遍历交通方式关键词映射
+    for (const [mode, keywords] of Object.entries(TRANSPORT_MODE_KEYWORDS)) {
+      if (keywords.some(keyword => input.includes(keyword))) {
+        return mode;
+      }
+    }
+    
+    // 默认驾车
+    return 'driving';
+  }
+
+  /**
    * 生成解析摘要
    * @param {Array} types - 会面点类型
    * @param {number} radius - 搜索半径
    * @param {string} strategy - 计算策略
+   * @param {string} transportMode - 交通方式
    * @returns {string} 摘要文本
    */
-  static generateSummary(types, radius, strategy) {
+  static generateSummary(types, radius, strategy, transportMode) {
     // 类型描述映射
     const typeLabels = {
       'cafe': '咖啡馆',
@@ -176,12 +206,21 @@ class AiParserService {
       'distance_gap': '距离优先'
     };
     
+    // 交通方式描述映射
+    const transportLabels = {
+      'driving': '驾车出行',
+      'transit': '公共交通',
+      'walking': '步行',
+      'bicycling': '骑行'
+    };
+    
     // 构建摘要
     const typeText = types.map(t => typeLabels[t] || t).join('、') || '多种类型';
     const radiusText = `${radius}米`;
     const strategyText = strategyLabels[strategy] || '智能推荐';
+    const transportText = transportLabels[transportMode] || '驾车出行';
     
-    return `为您推荐${typeText}类型的会面点，搜索范围${radiusText}，采用${strategyText}策略。`;
+    return `为您推荐${typeText}类型的会面点，搜索范围${radiusText}，采用${strategyText}策略，${transportText}。`;
   }
 
   /**
@@ -197,21 +236,22 @@ class AiParserService {
       'tea': ['茶馆', '奶茶', '饮品店'],
       'park': ['公园', '绿地', '广场'],
       'cinema': ['电影院', '影城'],
-      'ktv': ['KTV', '卡拉OK'],
+      'ktv': ['KTV', '卡拉 OK'],
       'mall': ['购物中心', '商场', '百货'],
       'library': ['图书馆', '自习室'],
       'office': ['写字楼', '商务中心']
     };
-    
+      
     // 生成 POI 搜索关键词
     const poiTypes = parsedResult.types.flatMap(typeId => 
       typeKeywords[typeId] || []
     );
-    
+      
     return {
       poiTypes: poiTypes.length > 0 ? poiTypes : ['美食', '咖啡', '商场'], // 默认关键词
       searchRadius: parsedResult.radius,
-      objective: parsedResult.strategy
+      objective: parsedResult.strategy,
+      transportMode: parsedResult.transportMode // 传递交通方式
     };
   }
 
