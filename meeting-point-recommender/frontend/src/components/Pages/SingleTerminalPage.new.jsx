@@ -13,8 +13,6 @@ import { findMeetingPoint } from '../../services/api';
 import amapService from '../../services/amapService';
 import AiChatBox from '../Chat/AiChatBox';
 import AiParserService from '../../services/aiParserService';
-import ResultsPanel from '../Result/ResultsPanel';
-import EnhancedAiDecisionService from '../../services/enhancedAiDecisionService';
 import './SingleTerminalPage.css';
 
 function SingleTerminalPage() {
@@ -52,18 +50,6 @@ function SingleTerminalPage() {
   
   // 解析出的参数
   const [parsedParameters, setParsedParameters] = useState(null);
-  
-  // 人员管理区域折叠状态
-  const [isPersonSectionCollapsed, setIsPersonSectionCollapsed] = useState(false); // 默认展开
-  
-  // AI 聊天区域折叠状态（与人员区域相反）
-  const [isChatSectionCollapsed, setIsChatSectionCollapsed] = useState(true); // 默认折叠
-  
-  // 右侧结果面板状态
-  const [isResultsPanelOpen, setIsResultsPanelOpen] = useState(false);
-  
-  // 路线数据
-  const [routes, setRoutes] = useState([]);
   
   // ==================== 地图交互状态 ====================
   // 人员移动状态
@@ -164,45 +150,6 @@ function SingleTerminalPage() {
     setMeetingPoints([]);
     setSelectedPoint(null);
     setError(null);
-    setRoutes([]);
-    setIsResultsPanelOpen(false);
-  }, []);
-
-  /**
-   * 处理会面点选择
-   * @param {Object} point - 选中的会面点
-   */
-  const handleSelectPoint = useCallback((point) => {
-    setSelectedPoint(point);
-    
-    // 生成模拟路线数据
-    const mockRoutes = persons.map((person, index) => ({
-      id: `route_${index}`,
-      mode: person.transportMode || 'driving',
-      duration: `${10 + index * 5}分钟`,
-      distance: `${1.2 + index * 0.3}公里`,
-      personTimes: [
-        {
-          name: person.name,
-          time: `${10 + index * 5}分钟`
-        }
-      ],
-      description: `从${person.locationName || '起点'}到${point.name}的最佳路线`,
-      selected: index === 0
-    }));
-    
-    setRoutes(mockRoutes);
-  }, [persons]);
-
-  /**
-   * 处理路线选择
-   * @param {Object} route - 选中的路线
-   */
-  const handleSelectRoute = useCallback((route) => {
-    setRoutes(prev => prev.map(r => ({
-      ...r,
-      selected: r.id === route.id
-    })));
   }, []);
 
   // ==================== 地图交互函数 ====================
@@ -220,57 +167,22 @@ function SingleTerminalPage() {
    * @param {Object} location - 新位置 {lng, lat}
    */
   const handleSelectedPointMove = useCallback((location) => {
-    // 更新选中的点
-    setSelectedPoint(prev => {
-      if (!prev) return prev;
-      const updated = { ...prev, lng: location.lng, lat: location.lat };
-      
-      // 同时更新候选点列表中的对应点
-      setMeetingPoints(points => points.map(p =>
-        p.id === prev.id ? { ...p, lng: location.lng, lat: location.lat } : p
-      ));
-      
-      return updated;
-    });
-  }, []);
+    setSelectedPoint(prev => prev ? { ...prev, lng: location.lng, lat: location.lat } : prev);
+    setMeetingPoints(prev => prev.map(p =>
+      p.id === selectedPoint?.id ? { ...p, lng: location.lng, lat: location.lat } : p
+    ));
+  }, [selectedPoint?.id]);
 
   /**
    * 处理人员移动
    * @param {string} id - 人员ID
    * @param {Object} location - 新位置 {lng, lat}
    */
-  const handlePersonMove = useCallback(async (id, location) => {
-    try {
-      // 逆地理编码获取新地址名称
-      const geocodeResult = await amapService.reverseGeocode(location.lng, location.lat);
-      let newLocationName = '未知位置';
-      
-      if (geocodeResult.surroundingPois && geocodeResult.surroundingPois.length > 0) {
-        newLocationName = geocodeResult.surroundingPois[0].title;
-      } else if (geocodeResult.address) {
-        newLocationName = geocodeResult.address;
-      }
-      
-      // 更新人员信息
-      setPersons(prev => prev.map(p => 
-        p.id === id 
-          ? { ...p, lng: location.lng, lat: location.lat, locationName: newLocationName }
-          : p
-      ));
-      
-      // 清除之前的计算结果
-      clearSearchResults();
-      
-    } catch (error) {
-      console.error('更新人员位置失败:', error);
-      // 即使逆地理编码失败，也更新坐标
-      setPersons(prev => prev.map(p => 
-        p.id === id 
-          ? { ...p, lng: location.lng, lat: location.lat }
-          : p
-      ));
-      clearSearchResults();
-    }
+  const handlePersonMove = useCallback((id, location) => {
+    setPersons(prev => prev.map(p => p.id === id ? { ...p, lng: location.lng, lat: location.lat } : p));
+    setMeetingPoints([]);
+    setSelectedPoint(null);
+    setError(null);
   }, []);
 
   /**
@@ -384,58 +296,15 @@ function SingleTerminalPage() {
       const result = await findMeetingPoint(persons, apiParams);
 
       if (result.success && result.data.meetingPoints.length > 0) {
-        // 使用增强 AI 决策服务生成推荐说明和排序
-        const { rankedCandidates, originalCandidates } = EnhancedAiDecisionService.generateEnhancedRecommendations(
-          result.data.meetingPoints,
-          persons
-        );
+        setMeetingPoints(result.data.meetingPoints);
+        setSelectedPoint(result.data.meetingPoints[0]);
         
-        // 右侧面板显示原始顺序（保持后端返回的 POI 列表）
-        setMeetingPoints(originalCandidates);
-        setSelectedPoint(originalCandidates[0]);
-        setIsResultsPanelOpen(true); // 自动打开结果面板
-        
-        // 在聊天框中输出 AI 推荐的 Top 3（按综合评分排序）
-        const top3Ranked = rankedCandidates.slice(0, 3);
-        let recommendationMessage = `✅ 搜索完成！为您找到 ${rankedCandidates.length} 个推荐会面点。
-
-${parsedParams.summary}
-
-`;
-        
-        // 🌟 AI 精选推荐（按综合评分排序）
-        recommendationMessage += '🤖 AI 综合评估维度：交通便利、天气适配、设施配套、口碑评价、停车便利\n\n';
-        recommendationMessage += '🌟 AI 精选 Top 3 推荐：\n\n';
-        
-        top3Ranked.forEach((candidate, index) => {
-          const rankEmoji = ['🥇', '🥈', '🥉'][index];
-          recommendationMessage += `${rankEmoji} 【第${index + 1}名】${candidate.name}\n`;
-          recommendationMessage += `   综合评分：${Math.round(candidate.enhancedScores.total)}分\n`;
-          
-          // 突出最强优势
-          const scores = [
-            { name: '交通', score: candidate.enhancedScores.traffic },
-            { name: '天气', score: candidate.enhancedScores.weather },
-            { name: '设施', score: candidate.enhancedScores.facilities },
-            { name: '口碑', score: candidate.enhancedScores.reputation },
-            { name: '停车', score: candidate.enhancedScores.parking }
-          ];
-          const bestScore = scores.reduce((prev, curr) => curr.score > prev.score ? curr : prev);
-          
-          recommendationMessage += `   ⭐ 突出优势：${bestScore.name} (${Math.round(bestScore.score)}分)\n\n`;
-          
-          // 推荐说明
-          recommendationMessage += candidate.recommendation || '';
-          recommendationMessage += '\n\n';
-        });
-        
-        recommendationMessage += '💡 提示：右侧面板展示所有候选点（按距离排序），您可以点击查看详情并规划路线。';
-        
+        // 添加成功消息到对话历史
         setConversation(prev => [
           ...prev,
           {
             role: 'ai',
-            content: recommendationMessage,
+            content: `✅ 搜索完成！为您找到 ${result.data.meetingPoints.length} 个推荐会面点。\n\n${parsedParams.summary}`,
             timestamp: Date.now()
           }
         ]);
@@ -492,122 +361,40 @@ ${parsedParams.summary}
         </div>
         
         <div className="panel-content">
-          {/* 参与人员板块 - 严格互斥逻辑 */}
-          <div 
-            className={`participant-section ${isPersonSectionCollapsed ? 'collapsed' : 'expanded'}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              // 点击人员区域：展开人员，收起 AI
-              if (isPersonSectionCollapsed) {
-                setIsPersonSectionCollapsed(false);
-                setIsChatSectionCollapsed(true);
-              }
-            }}
-          >
+          {/* 人员管理区域 */}
+          <div className="person-management-section">
             <div className="section-header">
-              <h3>
-                👥 参与人员 ({persons.length})
-                <button 
-                  className="toggle-arrow"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // 箭头按钮：切换人员区域状态
-                    const newState = !isPersonSectionCollapsed;
-                    setIsPersonSectionCollapsed(newState);
-                    if (newState) {
-                      // 收起人员时，AI 保持当前状态或展开
-                      if (isChatSectionCollapsed) {
-                        setIsChatSectionCollapsed(false);
-                      }
-                    } else {
-                      // 展开人员时，收起 AI
-                      setIsChatSectionCollapsed(true);
-                    }
-                  }}
-                >
-                  {isPersonSectionCollapsed ? '▶' : '▼'}
-                </button>
-              </h3>
-              
-              {!isPersonSectionCollapsed && persons.length > 0 && (
-                <button 
-                  className="clear-all-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleClearAll();
-                  }}
-                >
+              <h3>👥 参与人员 ({persons.length})</h3>
+              {persons.length > 0 && (
+                <button className="clear-btn" onClick={handleClearAll}>
                   清空
                 </button>
               )}
             </div>
             
-            {!isPersonSectionCollapsed && (
-              <div className="participant-content">
-                {/* 添加人员表单 */}
-                <PersonForm
-                  onAdd={handleAddPerson}
-                  pendingLocation={pendingLocation}
-                  onClearPending={handleClearPending}
-                />
-                
-                {/* 人员列表 */}
-                <PersonList
-                  persons={persons}
-                  onRemove={handleRemovePerson}
-                  onUpdate={handleUpdatePerson}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* AI 助手板块 - 严格互斥逻辑 */}
-          <div 
-            className={`ai-assistant-section ${isChatSectionCollapsed ? 'collapsed' : 'expanded'}`}
-            onClick={() => {
-              // 点击 AI 区域（除人员区域外的所有地方）：展开 AI，收起人员
-              if (isChatSectionCollapsed) {
-                setIsChatSectionCollapsed(false);
-                setIsPersonSectionCollapsed(true);
-              }
-            }}
-          >
-            <div className="section-header">
-              <h3>
-                🤖 AI 助手
-                <button 
-                  className="toggle-arrow"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // 箭头按钮：切换 AI 区域状态
-                    const newState = !isChatSectionCollapsed;
-                    setIsChatSectionCollapsed(newState);
-                    if (newState) {
-                      // 收起 AI 时，人员保持当前状态或展开
-                      if (isPersonSectionCollapsed) {
-                        setIsPersonSectionCollapsed(false);
-                      }
-                    } else {
-                      // 展开 AI 时，收起人员
-                      setIsPersonSectionCollapsed(true);
-                    }
-                  }}
-                >
-                  {isChatSectionCollapsed ? '▶' : '▼'}
-                </button>
-              </h3>
-            </div>
+            {/* 添加人员表单 */}
+            <PersonForm
+              onAdd={handleAddPerson}
+              pendingLocation={pendingLocation}
+              onClearPending={handleClearPending}
+            />
             
-            {!isChatSectionCollapsed && (
-              <div className="ai-content">
-                <AiChatBox
-                  conversation={conversation}
-                  onSendMessage={handleSendMessage}
-                  isLoading={aiProcessing || loading}
-                  onParametersParsed={setParsedParameters}
-                />
-              </div>
-            )}
+            {/* 人员列表 */}
+            <PersonList
+              persons={persons}
+              onRemove={handleRemovePerson}
+              onUpdate={handleUpdatePerson}
+            />
+          </div>
+          
+          {/* AI 对话框 */}
+          <div className="ai-chat-section">
+            <AiChatBox
+              conversation={conversation}
+              onSendMessage={handleSendMessage}
+              isLoading={aiProcessing || loading}
+              onParametersParsed={setParsedParameters}
+            />
           </div>
         </div>
       </div>
@@ -638,23 +425,32 @@ ${parsedParams.summary}
           )}
         </div>
 
+        {/* 结果展示区域（仅在有结果时显示） */}
+        {meetingPoints.length > 0 && (
+          <div className="results-section">
+            <div className="section-header">
+              <h3>🏆 Top {Math.min(5, meetingPoints.length)} 推荐会面点</h3>
+            </div>
+            <div className="results-list">
+              {meetingPoints.slice(0, 5).map((point, index) => (
+                <MeetingPointCard
+                  key={point.id}
+                  point={point}
+                  rank={index + 1}
+                  selected={selectedPoint?.id === point.id}
+                  onClick={() => setSelectedPoint(point)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 错误提示 */}
         {error && (
           <div className="error-message">
             {error}
           </div>
         )}
-
-        {/* 右侧结果面板 */}
-        <ResultsPanel
-          isOpen={isResultsPanelOpen}
-          onToggle={() => setIsResultsPanelOpen(!isResultsPanelOpen)}
-          meetingPoints={meetingPoints}
-          selectedPoint={selectedPoint}
-          onSelectPoint={handleSelectPoint}
-          routes={routes}
-          onSelectRoute={handleSelectRoute}
-        />
       </div>
     </div>
   );

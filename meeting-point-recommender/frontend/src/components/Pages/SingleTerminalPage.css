@@ -60,93 +60,91 @@
   overflow: hidden;
 }
 
-/* ========== 人员管理区域 ========== */
-.person-management-section {
-  padding: 16px 20px 0 20px;
-  border-bottom: 1px solid #eee;
+/* ========== 参与人员板块 ========== */
+.participant-section {
   flex-shrink: 0;
-  max-height: 500px;
   transition: all 0.3s ease;
-  overflow: hidden;
   cursor: pointer;
+  background: #ffffff;
+  border-bottom: 1px solid #eee;
 }
 
-.person-management-section.collapsed {
+.participant-section.collapsed {
   max-height: 50px;
-  padding-bottom: 16px;
 }
 
-.person-management-section:not(.collapsed) {
-  overflow-y: auto; /* 展开时允许垂直滚动 */
+.participant-section.expanded {
+  max-height: 500px;
+  overflow-y: auto;
 }
 
-/* 滚动条样式 */
-.person-management-section::-webkit-scrollbar {
+/* 参与人员滚动条 */
+.participant-section.expanded::-webkit-scrollbar {
   width: 6px;
 }
 
-.person-management-section::-webkit-scrollbar-track {
+.participant-section.expanded::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;
 }
 
-.person-management-section::-webkit-scrollbar-thumb {
+.participant-section.expanded::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 3px;
 }
 
-.person-management-section::-webkit-scrollbar-thumb:hover {
+.participant-section.expanded::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
 
-/* ========== AI 助手全区域 ========== */
-.ai-full-section {
+/* ========== AI 助手板块 ========== */
+.ai-assistant-section {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* 允许 flex shrink */
+  min-height: 0;
   transition: all 0.3s ease;
-  overflow: hidden;
   cursor: pointer;
   background: #ffffff;
 }
 
-.ai-full-section.collapsed {
+.ai-assistant-section.collapsed {
   flex: 0 0 auto;
-  padding: 0 20px;
 }
 
-.ai-full-section:not(.collapsed) {
-  overflow-y: auto; /* 展开时允许垂直滚动 */
-  padding: 0 20px 20px 20px;
+.ai-assistant-section.expanded {
+  overflow-y: auto;
 }
 
-/* AI 区域滚动条样式 */
-.ai-full-section::-webkit-scrollbar {
+/* AI 助手滚动条 */
+.ai-assistant-section.expanded::-webkit-scrollbar {
   width: 6px;
 }
 
-.ai-full-section::-webkit-scrollbar-track {
+.ai-assistant-section.expanded::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 3px;
 }
 
-.ai-full-section::-webkit-scrollbar-thumb {
+.ai-assistant-section.expanded::-webkit-scrollbar-thumb {
   background: #c1c1c1;
   border-radius: 3px;
 }
 
-.ai-full-section::-webkit-scrollbar-thumb:hover {
+.ai-assistant-section.expanded::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
 
-/* AI 区域标题 */
-.ai-section-header {
-  padding: 16px 0 12px 0;
-  border-bottom: 1px solid #eee;
+/* ========== 板块通用样式 ========== */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: #f8f9fa;
 }
 
-.ai-section-header h3 {
+.section-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
@@ -156,11 +154,52 @@
   gap: 8px;
 }
 
-/* AI 内容包装器 */
-.ai-content-wrapper {
+.toggle-arrow {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #667eea;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-arrow:hover {
+  background: #eef2ff;
+  color: #4d6ae0;
+}
+
+.clear-all-btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #ff4d4f;
+  background: none;
+  border: 1px solid #ff4d4f;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.clear-all-btn:hover {
+  background: #fff2f0;
+}
+
+.participant-content {
+  padding: 0 20px 20px 20px;
+}
+
+.ai-content {
   flex: 1;
   min-height: 0;
-  margin-top: 12px;
+  padding: 0 20px 20px 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* ========== 右侧面板 ========== */
@@ -236,22 +275,6 @@
 .clear-btn:hover {
   color: #ff4d4f;
   border-color: #ff4d4f;
-}
-
-.collapse-toggle {
-  background: none;
-  border: none;
-  font-size: 12px;
-  color: #999;
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.collapse-toggle:hover {
-  background: #f0f0f0;
-  color: #667eea;
 }
 
 /* ========== 响应式适配 ========== */

@@ -121,13 +121,13 @@
 /* ========== 面板内容 ========== */
 .panel-content {
   flex: 1;
-  overflow-y: auto; /* 始终允许垂直滚动 */
+  overflow-y: auto !important; /* 始终允许垂直滚动 */
   padding: 0;
 }
 
-/* 滚动条样式 */
+/* 滚动条样式 - 强制应用 */
 .panel-content::-webkit-scrollbar {
-  width: 8px;
+  width: 8px !important;
 }
 
 .panel-content::-webkit-scrollbar-track {
@@ -135,17 +135,25 @@
 }
 
 .panel-content::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: linear-gradient(90deg, #c1c1c1, #a8a8a8);
   border-radius: 4px;
 }
 
 .panel-content::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: linear-gradient(90deg, #a8a8a8, #888888);
+}
+
+/* ========== 推荐点列表 ========== */
+.points-list {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* ========== 推荐点视图 ========== */
 .points-view {
-  height: 100%;
+  min-height: 100%; /* 最小高度 100%，允许内容扩展 */
 }
 
 .points-list {
@@ -157,7 +165,7 @@
 
 /* ========== 路线视图 ========== */
 .routes-view {
-  height: 100%;
+  min-height: 100%; /* 最小高度 100%，允许内容扩展 */
 }
 
 .routes-list {

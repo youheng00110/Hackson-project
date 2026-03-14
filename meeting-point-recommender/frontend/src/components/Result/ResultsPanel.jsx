@@ -127,7 +127,7 @@ const ResultsPanel = ({
                       rank={index + 1}
                       selected={selectedPoint?.id === point.id}
                       onClick={() => onSelectPoint(point)}
-                      compact={true} // 紧凑模式
+                      compact={true}
                     />
                   ))}
                 </div>
