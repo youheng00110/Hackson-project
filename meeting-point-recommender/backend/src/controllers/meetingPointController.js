@@ -52,7 +52,7 @@ class MeetingPointController {
             }
 
             // 调用算法服务
-            const meetingPoints = await algorithmService.findOptimalMeetingPoint(
+            const result = await algorithmService.findOptimalMeetingPoint(
                 persons,
                 options
             );
@@ -62,7 +62,9 @@ class MeetingPointController {
             res.json({
                 success: true,
                 data: {
-                    meetingPoints,
+                    meetingPoints: result.meetingPoints,
+                    actualCount: result.actualCount,
+                    searchedCount: result.searchedCount,
                     calculationTime,
                     personsCount: persons.length
                 }

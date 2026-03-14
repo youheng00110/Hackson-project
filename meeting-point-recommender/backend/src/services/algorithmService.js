@@ -122,30 +122,52 @@ class AlgorithmService {
             searchRadius = 3000,
             objective = 'balanced'
         } = options;
-
+    
         const expandedPoiTypes = this.expandPoiKeywords(poiTypes);
-
+    
         console.log(`开始计算会面点，共 ${persons.length} 人`);
-
+    
         // 1. 计算加权中心点
         const weightedCenter = this.calculateWeightedCenter(persons);
         console.log('加权中心点:', weightedCenter);
-
-        // 2. 生成候选点
-        const candidates = await this.generateCandidatePoints(
+    
+        // 2. 生成候选点（获取 poiCount 标志）
+        const { candidates, poiCount } = await this.generateCandidatePoints(
             weightedCenter,
             expandedPoiTypes,
             maxCandidates,
             searchRadius
         );
-        console.log(`生成候选点 ${candidates.length} 个`);
-
-        // 3. 评分候选点
+        console.log(`生成候选点 ${candidates.length} 个，真实 POI 数量：${poiCount}`);
+    
+        // 3. 如果没有任何 POI，抛出错误让 AI 处理
+        if (poiCount === 0) {
+            throw new Error(`在${searchRadius}米范围内未找到任何合适的会面地点。建议：1) 扩大搜索范围；2) 更换其他区域；3) 尝试不同的场所类型。`);
+        }
+    
+        // 4. 评分候选点
         const scoredCandidates = await this.scoreCandidates(candidates, persons, city, objective);
         console.log(`完成评分，有效候选点 ${scoredCandidates.length} 个`);
-
-            // 4. 返回前5个最优点
-            return scoredCandidates.slice(0, 5);
+        
+        // 打印每个有效候选点的信息
+        scoredCandidates.forEach((c, i) => {
+            console.log(`  [${i + 1}] ${c.name} (${c.type}) - 评分：${c.score?.toFixed(2) || 'N/A'}`);
+        });
+    
+        // 5. 如果有效候选点不足 5 个，抛出提示
+        if (scoredCandidates.length < 5) {
+            console.error(`❌ [候选点不足] 只有 ${scoredCandidates.length} 个有效点，需要扩大搜索！`);
+            console.error(`   原始候选点：${candidates.length} 个`);
+            console.error(`   失败原因：大部分候选点无法计算路线或被过滤`);
+            throw new Error(`只找到 ${scoredCandidates.length} 个有效会面点（原始搜索到${candidates.length}个候选点，但大部分无法计算路线）。建议：1) 扩大搜索范围；2) 更换其他区域；3) 尝试不同的场所类型。`);
+        }
+    
+        // 6. 返回前 5 个最优点，并附带实际有效数量
+        return {
+            meetingPoints: scoredCandidates.slice(0, 5),
+            actualCount: scoredCandidates.length,
+            searchedCount: candidates.length
+        };
     }
 
     /**
@@ -177,25 +199,15 @@ class AlgorithmService {
      */
     async generateCandidatePoints(center, poiTypes, maxCandidates, searchRadius) {
         const candidates = [];
-
-        // 策略1: 加权中心点本身
-        candidates.push({
-            id: 'center',
-            lng: center.lng,
-            lat: center.lat,
-            name: '加权中心点',
-            address: '',
-            type: 'center'
-        });
-
-        // 策略2: 周边 POI 搜索
+    
+        // 策略 1: 周边 POI 搜索
         const radius = Math.max(500, Number(searchRadius) || 3000);
         const searchRadii = [
             Math.round(radius * 0.35),
             Math.round(radius * 0.7),
             radius
         ].filter((value, index, arr) => value >= 300 && arr.indexOf(value) === index);
-
+    
         for (const radius of searchRadii) {
             for (const type of poiTypes) {
                 try {
@@ -205,11 +217,11 @@ class AlgorithmService {
                         radius: radius,
                         offset: 20
                     });
-
+    
                     const filteredPois = this.isShoppingKeyword(type)
                         ? pois.filter(p => this.isMallPoi(p))
                         : pois.filter(p => !GOV_RESULT_REGEX.test(p?.name || '') && !GOV_RESULT_REGEX.test(p?.type || ''));
-
+    
                     for (const poi of filteredPois) {
                         // 避免重复
                         const exists = candidates.some(c =>
@@ -227,18 +239,18 @@ class AlgorithmService {
                             });
                         }
                     }
-
+    
                     if (candidates.length >= maxCandidates) {
-                        return candidates.slice(0, maxCandidates);
+                        return { candidates: candidates.slice(0, maxCandidates), poiCount: candidates.length };
                     }
                 } catch (error) {
-                    console.error(`POI搜索失败 (${type}, ${radius}m):`, error.message);
+                    console.error(`POI 搜索失败 (${type}, ${radius}m):`, error.message);
                 }
             }
         }
-
-        // 策略3: 如果 POI 不够，扩大半径再搜索
-        if (candidates.length === 0) {
+    
+        // 策略 2: 如果 POI 不够，扩大半径再搜索
+        if (candidates.length > 0 && candidates.length < 10) {
             const expandedRadii = [radius * 1.5, radius * 2, radius * 3];
             for (const expandRadius of expandedRadii) {
                 for (const type of poiTypes) {
@@ -249,11 +261,11 @@ class AlgorithmService {
                             radius: Math.round(expandRadius),
                             offset: 20
                         });
-
+    
                         const filteredPois = this.isShoppingKeyword(type)
                             ? pois.filter(p => this.isMallPoi(p))
                             : pois.filter(p => !GOV_RESULT_REGEX.test(p?.name || '') && !GOV_RESULT_REGEX.test(p?.type || ''));
-
+    
                         for (const poi of filteredPois) {
                             const exists = candidates.some(c =>
                                 Math.abs(c.lng - poi.lng) < 0.0001 &&
@@ -270,42 +282,19 @@ class AlgorithmService {
                                 });
                             }
                         }
-
+    
                         if (candidates.length >= maxCandidates) {
-                            return candidates.slice(0, maxCandidates);
+                            return { candidates: candidates.slice(0, maxCandidates), poiCount: candidates.length };
                         }
                     } catch (error) {
-                        console.error(`POI搜索失败 (${type}, ${Math.round(expandRadius)}m):`, error.message);
+                        console.error(`POI 搜索失败 (${type}, ${Math.round(expandRadius)}m):`, error.message);
                     }
                 }
             }
         }
-
-        // 策略4: 如果仍不足，添加更大范围采样点
-        if (candidates.length < 10) {
-            const directions = [0, 45, 90, 135, 180, 225, 270, 315];
-            const distances = [
-                Math.round(radius * 0.3),
-                Math.round(radius * 0.6),
-                Math.round(radius * 0.9)
-            ].filter(d => d >= 300);
-
-            directions.forEach(angle => {
-                distances.forEach(dist => {
-                    const point = geoUtils.calculateDestination(center, dist, angle);
-                    candidates.push({
-                        id: `sample_${angle}_${dist}`,
-                        lng: point.lng,
-                        lat: point.lat,
-                        name: `采样点`,
-                        address: '',
-                        type: 'sample'
-                    });
-                });
-            });
-        }
-
-        return candidates.slice(0, maxCandidates);
+    
+        // 返回真实 POI 数量（用于判断是否需要提示扩大搜索）
+        return { candidates: candidates.slice(0, maxCandidates), poiCount: candidates.length };
     }
 
     /**
@@ -315,7 +304,9 @@ class AlgorithmService {
         const scoredCandidates = [];
 
         for (const candidate of candidates) {
-            if (candidate.type === 'sample') {
+            // 跳过采样点和加权中心点
+            if (candidate.type === 'sample' || candidate.type === 'center') {
+                console.log(`⚠️ 跳过候选点 [${candidate.name}]，类型：${candidate.type}`);
                 continue;
             }
             try {
@@ -348,8 +339,11 @@ class AlgorithmService {
 
                 // 如果有人无法到达，跳过此候选点
                 if (routeInfos.length !== persons.length) {
+                    console.log(`❌ 跳过候选点 [${candidate.name}]，原因：${persons.length - routeInfos.length} 人无法到达`);
                     continue;
                 }
+                
+                console.log(`✅ 通过评分的候选点：[${candidate.name}]，${routeInfos.length} 人都能到达`);
 
                 // 计算评分指标
                 const arrivalTimes = routeInfos.map(r => r.arrivalTime);

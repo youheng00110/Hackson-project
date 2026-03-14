@@ -390,7 +390,28 @@ function SingleTerminalPage() {
       // 执行搜索（使用更新后的交通方式）
       const result = await findMeetingPoint(personsWithTransport, apiParams);
 
+      console.log('🔍 [API 返回结果]', {
+        success: result.success,
+        meetingPointsLength: result.data?.meetingPoints?.length,
+        actualCount: result.data?.actualCount,
+        searchedCount: result.data?.searchedCount,
+        hasData: !!result.data,
+        firstMeetingPoint: result.data?.meetingPoints?.[0]
+      });
+
+      // 检查有效候选点数量，如果不足 5 个则主动抛出错误
       if (result.success && result.data.meetingPoints.length > 0) {
+        const { actualCount, searchedCount } = result.data;
+        console.log('✅ 后端返回数据:', {
+          meetingPointsLength: result.data.meetingPoints.length,
+          actualCount,
+          searchedCount
+        });
+        
+        if (actualCount < 5) {
+          throw new Error(`只找到 ${actualCount} 个有效会面点（原始搜索到${searchedCount}个候选点，但大部分无法计算路线）。建议：1) 扩大搜索范围；2) 更换其他区域；3) 尝试不同的场所类型。`);
+        }
+        
         // 使用增强 AI 决策服务生成推荐说明和排序
         const { rankedCandidates, originalCandidates } = EnhancedAiDecisionService.generateEnhancedRecommendations(
           result.data.meetingPoints,
@@ -416,7 +437,7 @@ ${parsedParams.summary}
         
         top3Ranked.forEach((candidate, index) => {
           const rankEmoji = ['🥇', '🥈', '🥉'][index];
-          recommendationMessage += `${rankEmoji} 【第${index + 1}名】${candidate.name}\n`;
+          recommendationMessage += `${rankEmoji}【第${index + 1}名】${candidate.name}\n`;
           recommendationMessage += `   综合评分：${Math.round(candidate.enhancedScores.total)}分\n`;
           
           // 突出最强优势
@@ -463,6 +484,47 @@ ${parsedParams.summary}
           timestamp: Date.now()
         }
       ]);
+      
+      // 如果是"未找到 POI"或"有效候选点不足"的错误，自动扩大搜索范围重试
+      if (errorMsg.includes('未找到任何合适的会面地点') || errorMsg.includes('只找到')) {
+        // 检查重试次数
+        const retryCount = parsedParams.retryCount || 0;
+        const maxRetries = 3; // 最多重试 3 次
+        
+        if (retryCount >= maxRetries) {
+          // 超过最大重试次数，停止自动重试
+          setConversation(prev => [
+            ...prev,
+            {
+              role: 'ai',
+              content: `⚠️ 已尝试扩大搜索范围 ${maxRetries} 次（当前半径：${parsedParams.radius}米），但仍然未找到足够的会面点。建议：\n1. 更换其他区域试试\n2. 调整参与人员的位置\n3. 选择不同的场所类型`,
+              timestamp: Date.now()
+            }
+          ]);
+          return; // 停止重试
+        }
+        
+        setTimeout(() => {
+          const newRadius = Math.min(parsedParams.radius * 2, 10000); // 最大扩大到 10 公里
+          
+          setConversation(prev => [
+            ...prev,
+            {
+              role: 'ai',
+              content: `🤖 检测到当前位置周围场所较少或路线计算困难，我将为您扩大搜索范围重新尝试...（第 ${retryCount + 1}/${maxRetries} 次，半径：${newRadius}米）`,
+              timestamp: Date.now()
+            }
+          ]);
+                
+          // 自动扩大搜索半径并重新搜索，增加重试计数
+          const expandedParams = {
+            ...parsedParams,
+            radius: newRadius,
+            retryCount: retryCount + 1 // 记录重试次数
+          };
+          executeSearch(expandedParams);
+        }, 1500);
+      }
     } finally {
       setLoading(false);
     }
